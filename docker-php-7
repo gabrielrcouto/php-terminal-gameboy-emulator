@@ -1,0 +1,2 @@
+#!/bin/bash
+docker run -it -v $PWD:/app -w /app php:cli /bin/bash
