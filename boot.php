@@ -12,13 +12,9 @@ $core->start();
 
 if ($core->stopEmulator & 2 == 2) {
     $core->stopEmulator &= 1;
-    $core->lastIteration = microtime(true);
-    // echo "Starting the iterator." . PHP_EOL;
-
-    //gbRunInterval = setInterval(continueCPU, settings[20]);
+    $core->lastIteration = (int) (microtime(true) * 1000);
 
     while (true) {
-        sleep(Settings::$settings[20] / 1000);
         $core->run();
     }
 } else if (($core->stopEmulator & 2) == 0) {

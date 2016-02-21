@@ -620,64 +620,6 @@ class Core
         $this->spritePriorityEnabled = $state[$index++];
         $this->tileReadState = $this->toTypedArray($state[$index++], false, false);
         $this->windowSourceLine = $state[$index++];
-        $this->channel1adjustedFrequencyPrep = $state[$index++];
-        $this->channel1duty = $state[$index++];
-        $this->channel1lastSampleLookup = $state[$index++];
-        $this->channel1adjustedDuty = $state[$index++];
-        $this->channel1totalLength = $state[$index++];
-        $this->channel1envelopeVolume = $state[$index++];
-        $this->channel1currentVolume = $state[$index++];
-        $this->channel1envelopeType = $state[$index++];
-        $this->channel1envelopeSweeps = $state[$index++];
-        $this->channel1consecutive = $state[$index++];
-        $this->channel1frequency = $state[$index++];
-        $this->channel1volumeEnvTime = $state[$index++];
-        $this->channel1lastTotalLength = $state[$index++];
-        $this->channel1timeSweep = $state[$index++];
-        $this->channel1lastTimeSweep = $state[$index++];
-        $this->channel1numSweep = $state[$index++];
-        $this->channel1frequencySweepDivider = $state[$index++];
-        $this->channel1decreaseSweep = $state[$index++];
-        $this->channel2adjustedFrequencyPrep = $state[$index++];
-        $this->channel2duty = $state[$index++];
-        $this->channel2lastSampleLookup = $state[$index++];
-        $this->channel2adjustedDuty = $state[$index++];
-        $this->channel2totalLength = $state[$index++];
-        $this->channel2envelopeVolume = $state[$index++];
-        $this->channel2currentVolume = $state[$index++];
-        $this->channel2envelopeType = $state[$index++];
-        $this->channel2envelopeSweeps = $state[$index++];
-        $this->channel2consecutive = $state[$index++];
-        $this->channel2frequency = $state[$index++];
-        $this->channel2volumeEnvTime = $state[$index++];
-        $this->channel2lastTotalLength = $state[$index++];
-        $this->channel3canPlay = $state[$index++];
-        $this->channel3totalLength = $state[$index++];
-        $this->channel3lastTotalLength = $state[$index++];
-        $this->channel3patternType = $state[$index++];
-        $this->channel3frequency = $state[$index++];
-        $this->channel3consecutive = $state[$index++];
-        $this->channel3PCM = $state[$index++];
-        $this->channel3adjustedFrequencyPrep = $state[$index++];
-        $this->channel4adjustedFrequencyPrep = $state[$index++];
-        $this->channel4lastSampleLookup = $state[$index++];
-        $this->channel4totalLength = $state[$index++];
-        $this->channel4envelopeVolume = $state[$index++];
-        $this->channel4currentVolume = $state[$index++];
-        $this->channel4envelopeType = $state[$index++];
-        $this->channel4envelopeSweeps = $state[$index++];
-        $this->channel4consecutive = $state[$index++];
-        $this->channel4volumeEnvTime = $state[$index++];
-        $this->channel4lastTotalLength = $state[$index++];
-        $this->soundMasterEnabled = $state[$index++];
-        $this->VinLeftChannelEnabled = $state[$index++];
-        $this->VinRightChannelEnabled = $state[$index++];
-        $this->VinLeftChannelMasterVolume = $state[$index++];
-        $this->VinRightChannelMasterVolume = $state[$index++];
-        $this->vinLeft = $state[$index++];
-        $this->vinRight = $state[$index++];
-        $this->leftChannel = $state[$index++];
-        $this->rightChannel = $state[$index++];
         $this->actualScanLine = $state[$index++];
         $this->RTCisLatched = $state[$index++];
         $this->latchedSeconds = $state[$index++];
@@ -700,12 +642,10 @@ class Core
         $this->tileCountInvalidator = $this->tileCount * 4;
         $this->fromSaveState = true;
         $this->checkPaletteType();
-        $this->convertAuxilliary();
         $this->initializeLCDController();
         $this->memoryReadJumpCompile();
         $this->memoryWriteJumpCompile();
         $this->initLCD();
-        $this->initSound();
         $this->drawToCanvas();
     }
 
@@ -716,21 +656,7 @@ class Core
         $this->initMemory();  //Write the startup memory.
         $this->ROMLoad();     //Load the ROM into memory and get cartridge information from it.
         $this->initLCD();     //Initializae the graphics.
-        $this->initSound();   //Sound object initialization.
         $this->run();         //Start the emulation.
-    }
-
-    public function convertAuxilliary()
-    {
-        try {
-            // @TODO - Uint16
-            // Its OK, tested
-            $this->DAATable = $this->DAATable;
-            $this->TICKTable = $this->TICKTable;
-            $this->SecondaryTICKTable = $this->SecondaryTICKTable;
-        } catch (\Exception $e) {
-            echo 'Could not convert the auxilliary arrays to typed arrays' . PHP_EOL;
-        }
     }
 
     public function initMemory() {
@@ -741,7 +667,6 @@ class Core
         $this->gbColorizedPalette = $this->ArrayPad(12, 0);     //32-bit signed
         $this->gbcRawPalette = $this->ArrayPad(0x80, -1000);    //32-bit signed
         $this->gbcPalette = [0x40];                  //32-bit signed
-        $this->convertAuxilliary();
         //Initialize the GBC Palette:
         $index = 0x3F;
 
@@ -1149,31 +1074,24 @@ class Core
             }
         }
 
-        // @TODO
-        //Create a white screen
-        // $this->drawContext = $this->canvas.getContext("2d");
-        // $this->drawContext->fillStyle = "rgb(255, 255, 255)";
-        // $this->drawContext->fillRect(0, 0, $this->width, $this->height);
-
         $this->drawContext = new DrawContext();
 
-        // NEW
         $this->width = 160;
         $this->height = 144;
 
         //Get a CanvasPixelArray buffer:
-        $this->canvasBuffer = new \stdClass();
-        $this->canvasBuffer->data = array_fill(0, 4 * $this->width * $this->height, 255);
+        //Create a white screen
+        $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
 
         $index = $this->pixelCount;
         $index2 = $this->rgbCount;
 
         while ($index > 0) {
             $this->frameBuffer[--$index] = 0x00FFFFFF;
-            $this->canvasBuffer->data[$index2 -= 4] = 0xFF;
-            $this->canvasBuffer->data[$index2 + 1] = 0xFF;
-            $this->canvasBuffer->data[$index2 + 2] = 0xFF;
-            $this->canvasBuffer->data[$index2 + 3] = 0xFF;
+            $this->canvasBuffer[$index2 -= 4] = 0xFF;
+            $this->canvasBuffer[$index2 + 1] = 0xFF;
+            $this->canvasBuffer[$index2 + 2] = 0xFF;
+            $this->canvasBuffer[$index2 + 3] = 0xFF;
         }
 
         $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
@@ -1188,56 +1106,6 @@ class Core
             $this->JoyPad |= (1 << $key);
         }
         $this->memory[0xFF00] = ($this->memory[0xFF00] & 0x30) + (((($this->memory[0xFF00] & 0x20) == 0) ? ($this->JoyPad >> 4) : 0xF) & ((($this->memory[0xFF00] & 0x10) == 0) ? ($this->JoyPad & 0xF) : 0xF));
-    }
-
-    public function initSound() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function initAudioBuffer() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function playAudio() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function audioUpdate() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function initializeStartState() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function generateAudio() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function channel1Compute() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function channel2Compute() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function channel3Compute() {
-        // Not implemented in PHP
-        return;
-    }
-
-    public function channel4Compute() {
-        // Not implemented in PHP
-        return;
     }
 
     public function run() {
@@ -1545,21 +1413,8 @@ class Core
 
     public function DisplayShowOff() {
         if ($this->drewBlank == 0) {
-            //Draw a blank screen:
-            try {
-                // @TODO
-                // $this->drawContext->fillStyle = "white";
-                $this->drawContext->fillRect(0, 0, $this->width, $this->height);
-            } catch (\Exception $e) {
-                //cout("Could not use fillStyle / fillRect.", 2);
-                $index = $this->pixelCount;
-
-                while ($index > 0) {
-                    $this->canvasBuffer->data[--$index] = 0xFF;
-                }
-
-                $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
-            }
+            $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
+            $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
             $this->drewBlank = 2;
         }
     }
@@ -1664,45 +1519,29 @@ class Core
         //Draw the frame buffer to the canvas:
         if (Settings::$settings[4] == 0 || $this->frameCount > 0) {
             //Copy and convert the framebuffer data to the CanvasPixelArray format.
-            $canvasData = $this->canvasBuffer->data;
-            $frameBuffer = (Settings::$settings[21] && $this->pixelCount > 0 && $this->width != 160 && $this->height != 144) ? $this->resizeFrameBuffer() : $this->frameBuffer;
             $bufferIndex = $this->pixelCount;
             $canvasIndex = $this->rgbCount;
 
             while ($canvasIndex > 3) {
-                $canvasData[$canvasIndex -= 4] = ($frameBuffer[--$bufferIndex] >> 16) & 0xFF;       //Red
-                $canvasData[$canvasIndex + 1] = ($frameBuffer[$bufferIndex] >> 8) & 0xFF;           //Green
-                $canvasData[$canvasIndex + 2] = $frameBuffer[$bufferIndex] & 0xFF;                  //Blue
+                //Red
+                $this->canvasBuffer[$canvasIndex -= 4] = ($this->frameBuffer[--$bufferIndex] >> 16) & 0xFF;
+                //Green
+                $this->canvasBuffer[$canvasIndex + 1] = ($this->frameBuffer[$bufferIndex] >> 8) & 0xFF;
+                //Blue
+                $this->canvasBuffer[$canvasIndex + 2] = $this->frameBuffer[$bufferIndex] & 0xFF;
             }
 
-            $this->canvasBuffer->data = $canvasData;
-
-            // @TODO
             //Draw out the CanvasPixelArray data:
             $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
 
             if (Settings::$settings[4] > 0) {
-                //Increment the frameskip counter:
+                //Decrement the frameskip counter:
                 $this->frameCount -= Settings::$settings[4];
             }
-        }
-        else {
+        } else {
             //Reset the frameskip counter:
             $this->frameCount += Settings::$settings[12];
         }
-    }
-
-    public function resizeFrameBuffer() {
-        //Attempt to resize the canvas in software instead of in CSS:
-        $column = 0;
-        $rowOffset = 0;
-        for ($row = 0; $row < $this->height; $row++) {
-            $rowOffset = floor($row * $this->heightRatio) * 160;
-            for ($column = 0; $column < $this->width; $column++) {
-                $this->scaledFrameBuffer[($row * $this->width) + $column] = $this->frameBuffer[$rowOffset + floor($column * $this->widthRatio)];
-            }
-        }
-        return $this->scaledFrameBuffer;
     }
 
     public function invalidateAll($pal) {
