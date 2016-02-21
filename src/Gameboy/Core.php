@@ -3,15 +3,6 @@ namespace GameBoy;
 
 class Core
 {
-    // Canvas DOM object for drawing out the graphics to.
-    protected $canvas;
-
-    // Image DOM object for drawing out the graphics to as an alternate means.
-    protected $canvasAlt;
-
-    // Used for external scripts to tell if we're really using the canvas or not (Helpful with fullscreen switching).
-    public $canvasFallbackHappened = false;
-
     // LCD Context
     public $drawContext = null;
 
@@ -231,15 +222,11 @@ class Core
     public $RTCHALT = false;
 
     //
-    //Audio generation counters:
+    //Timing Variables
     //
 
     //Used to sample the audio system every x CPU instructions.
     public $audioTicks = 0;
-
-    //
-    //Timing Variables
-    //
 
     //Times for how many instructions to execute before ending the loop.
     public $emulatorTicks = 0;
@@ -391,10 +378,8 @@ class Core
 
     public $cTIMER = null;
 
-    public function __construct($canvas, $canvasAlt, $ROMImage)
+    public function __construct($ROMImage)
     {
-        $this->canvas = $canvas;
-        $this->canvasAlt = $canvasAlt;
         $this->ROMImage = $ROMImage;
 
         $this->DISPLAYOFFCONTROL[] = function ($parentObj) {
@@ -1092,7 +1077,6 @@ class Core
         }
 
         $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
-        $this->canvasFallbackHappened = false;
     }
 
     public function JoyPadEvent($key, $down)
