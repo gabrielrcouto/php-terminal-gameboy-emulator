@@ -48,7 +48,7 @@ class DrawContext
         }
 
         echo "\e[H\e[2J";
-        echo 'FPS: ' . $this->fps . PHP_EOL;
+        echo 'FPS: ' . $this->fps . ' - Frame Skip: ' . Settings::$settings[4] . PHP_EOL;
         echo $this->canvas->frame();
         $this->canvas->clear();
     }

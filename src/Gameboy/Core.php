@@ -231,131 +231,11 @@ class Core
     public $RTCHALT = false;
 
     //
-    //Sound variables:
-    //
-
-    //Audio object or the WAV PCM generator wrapper
-    public $audioHandle = null;
-
-    //Buffering counter for the WAVE PCM output.
-    public $outTracker = 0;
-
-    //Buffering limiter for WAVE PCM output.
-    public $outTrackerLimit = 0;
-
-    //Length of the sound buffers.
-    public $numSamplesTotal = 0;
-
-    //Length of the sound buffer for one channel.
-    public $sampleSize = 0;
-
-    public $dutyLookup = [0.125, 0.25, 0.5, 0.75];
-
-    //The audio buffer we're working on (When not overflowing).
-    public $audioSamples = [];
-
-    //Audio overflow buffer.
-    public $audioBackup = [];
-
-    //Pointer to the sample workbench.
-    public $currentBuffer = null;
-
-    //How many channels are being fed into the left side stereo / mono.
-    public $channelLeftCount = 0;
-
-    //How many channels are being fed into the right side stereo.
-    public $channelRightCount = 0;
-
-    public $noiseTableLookup = null;
-
-    public $smallNoiseTable = [0x80];
-
-    public $largeNoiseTable = [0x8000];
-
-    //As its name implies
-    public $soundMasterEnabled = false;
-
-    //Track what method we're using for audio output.
-    public $audioType = -1;
-
-    //
-    //Vin Shit:
-    //
-
-    public $VinLeftChannelEnabled = false;
-
-    public $VinRightChannelEnabled = false;
-
-    public $VinLeftChannelMasterVolume = 0;
-
-    public $VinRightChannelMasterVolume = 0;
-
-    public $vinLeft = 1;
-
-    public $vinRight = 1;
-
-    //Channels Enabled:
-
-    //Which channels are enabled for left side stereo / mono?
-    public $leftChannel = [true, true, true, false];
-
-    //Which channels are enabled for right side stereo?
-    public $rightChannel = [true, true, true, false];
-
-
-    //Current Samples Being Computed:
-    public $currentSampleLeft = 0;
-
-    public $currentSampleRight = 0;
-
-    public $channel3Tracker = 0;
-
-    //
-    //Pre-multipliers to cache some calculations:
-    //
-    public $preChewedAudioComputationMultiplier;
-
-    public $preChewedWAVEAudioComputationMultiplier;
-
-    public $whiteNoiseFrequencyPreMultiplier;
-
-    //Premultiplier for audio samples per instructions.
-    public $samplesOut = 0;
-
-    public $volumeEnvelopePreMultiplier;
-
-    public $channel1TimeSweepPreMultiplier;
-
-    public $channel1lastTotalLength;
-
-    public $channel1lastTimeSweep;
-
-    public $channel1frequency;
-
-    public $channel2lastTotalLength;
-
-    public $channel2frequency;
-
-    public $channel3frequency;
-
-    public $channel4lastTotalLength;
-
-    public $audioTotalLengthMultiplier;
-
-    //
     //Audio generation counters:
     //
 
-    public $audioOverflow = false;
-
     //Used to sample the audio system every x CPU instructions.
     public $audioTicks = 0;
-
-    //Used to keep alignment on audio generation.
-    public $audioIndex = 0;
-
-    //Used to keep alignment on the number of samples to output (Realign from counter alias).
-    public $rollover = 0;
 
     //
     //Timing Variables
@@ -523,14 +403,6 @@ class Core
             //Array of line 0 function to handle the LCD controller when it's off (Do nothing!).
         };
 
-        $this->preChewedAudioComputationMultiplier = 0x20000 / Settings::$settings[14];
-        $this->preChewedWAVEAudioComputationMultiplier = 0x200000 / Settings::$settings[14];
-        $this->whiteNoiseFrequencyPreMultiplier = 4194300 / Settings::$settings[14] / 8;
-
-        $this->volumeEnvelopePreMultiplier = Settings::$settings[14] / 0x40;
-        $this->channel1TimeSweepPreMultiplier = Settings::$settings[14] / 0x80;
-        $this->audioTotalLengthMultiplier = Settings::$settings[14] / 0x100;
-
         $this->tileCountInvalidator = $this->tileCount * 4;
 
         $this->ROMBanks[0x52] = 72;
@@ -558,8 +430,6 @@ class Core
         $this->SecondaryTICKTable = TICKTables::$secondary;
 
         $this->LINECONTROL = array_fill(0, 154, null);
-
-        // $this->initializeStartState();
     }
 
     public function saveState()
@@ -632,7 +502,7 @@ class Core
             $this->cHuC3,
             $this->cHuC1,
             $this->drewBlank,
-            $this->tileData.slice(0),
+            $this->tileData,
             $this->fromTypedArray($this->frameBuffer),
             $this->tileCount,
             $this->colorCount,
@@ -644,64 +514,6 @@ class Core
             $this->spritePriorityEnabled,
             $this->fromTypedArray($this->tileReadState),
             $this->windowSourceLine,
-            $this->channel1adjustedFrequencyPrep,
-            $this->channel1duty,
-            $this->channel1lastSampleLookup,
-            $this->channel1adjustedDuty,
-            $this->channel1totalLength,
-            $this->channel1envelopeVolume,
-            $this->channel1currentVolume,
-            $this->channel1envelopeType,
-            $this->channel1envelopeSweeps,
-            $this->channel1consecutive,
-            $this->channel1frequency,
-            $this->channel1volumeEnvTime,
-            $this->channel1lastTotalLength,
-            $this->channel1timeSweep,
-            $this->channel1lastTimeSweep,
-            $this->channel1numSweep,
-            $this->channel1frequencySweepDivider,
-            $this->channel1decreaseSweep,
-            $this->channel2adjustedFrequencyPrep,
-            $this->channel2duty,
-            $this->channel2lastSampleLookup,
-            $this->channel2adjustedDuty,
-            $this->channel2totalLength,
-            $this->channel2envelopeVolume,
-            $this->channel2currentVolume,
-            $this->channel2envelopeType,
-            $this->channel2envelopeSweeps,
-            $this->channel2consecutive,
-            $this->channel2frequency,
-            $this->channel2volumeEnvTime,
-            $this->channel2lastTotalLength,
-            $this->channel3canPlay,
-            $this->channel3totalLength,
-            $this->channel3lastTotalLength,
-            $this->channel3patternType,
-            $this->channel3frequency,
-            $this->channel3consecutive,
-            $this->channel3PCM,
-            $this->channel3adjustedFrequencyPrep,
-            $this->channel4adjustedFrequencyPrep,
-            $this->channel4lastSampleLookup,
-            $this->channel4totalLength,
-            $this->channel4envelopeVolume,
-            $this->channel4currentVolume,
-            $this->channel4envelopeType,
-            $this->channel4envelopeSweeps,
-            $this->channel4consecutive,
-            $this->channel4volumeEnvTime,
-            $this->channel4lastTotalLength,
-            $this->soundMasterEnabled,
-            $this->VinLeftChannelEnabled,
-            $this->VinRightChannelEnabled,
-            $this->VinLeftChannelMasterVolume,
-            $this->VinRightChannelMasterVolume,
-            $this->vinLeft,
-            $this->vinRight,
-            $this->leftChannel,
-            $this->rightChannel,
             $this->actualScanLine,
             $this->RTCisLatched,
             $this->latchedSeconds,
@@ -958,8 +770,6 @@ class Core
         $this->FHalfCarry = true;
         $this->FCarry = true;
         $this->registersHL = 0x014D;
-        $this->leftChannel = [true, true, true, false];
-        $this->rightChannel = [true, true, true, false];
 
         //Fill in the boot ROM set register values
         //Default values to the GB boot ROM values, then fill in the GBC boot ROM values after ROM loading
@@ -1003,11 +813,6 @@ class Core
         $this->registerE = 0;
         $this->FZero = $this->FSubtract = $this->FHalfCarry = $this->FCarry = false;
         $this->registersHL = 0;
-        $this->leftChannel = $this->ArrayPad(4, false);
-        $this->rightChannel = $this->ArrayPad(4, false);
-        $this->channel2frequency = $this->channel1frequency = 0;
-        $this->channel2volumeEnvTime = $this->channel1volumeEnvTime = 0;
-        $this->channel2consecutive = $this->channel1consecutive = true;
         $this->memory[0xFF00] = 0xF;  //Set the joypad state.
     }
 
@@ -1343,81 +1148,42 @@ class Core
                 }
             }
         }
-        try {
-            if (Settings::$settings[5]) {
-                //Nasty since we are throwing on purpose to force a try/catch fallback
-                // throw(new Error(""));
-                throw new \Exception("");
-            }
 
-            // @TODO
-            //Create a white screen
-            // $this->drawContext = $this->canvas.getContext("2d");
-            // $this->drawContext->fillStyle = "rgb(255, 255, 255)";
-            // $this->drawContext->fillRect(0, 0, $this->width, $this->height);
+        // @TODO
+        //Create a white screen
+        // $this->drawContext = $this->canvas.getContext("2d");
+        // $this->drawContext->fillStyle = "rgb(255, 255, 255)";
+        // $this->drawContext->fillRect(0, 0, $this->width, $this->height);
 
-            $this->drawContext = new DrawContext();
+        $this->drawContext = new DrawContext();
 
-            // NEW
-            $this->width = 160;
-            $this->height = 144;
+        // NEW
+        $this->width = 160;
+        $this->height = 144;
 
-            //Get a CanvasPixelArray buffer:
-            try {
-                //$this->canvasBuffer = $this->drawContext->createImageData($this->width, $this->height);
-                $this->canvasBuffer = new \stdClass();
-                $this->canvasBuffer->data = array_fill(0, 4 * $this->width * $this->height, 255);
-            }
-            catch (\Exception $error) {
-                echo "Falling back to the getImageData initialization" . PHP_EOL;
+        //Get a CanvasPixelArray buffer:
+        $this->canvasBuffer = new \stdClass();
+        $this->canvasBuffer->data = array_fill(0, 4 * $this->width * $this->height, 255);
 
-                $this->canvasBuffer = $this->drawContext->getImageData(0, 0, $this->width, $this->height);
-            }
+        $index = $this->pixelCount;
+        $index2 = $this->rgbCount;
 
-            $index = $this->pixelCount;
-            $index2 = $this->rgbCount;
-
-            while ($index > 0) {
-                $this->frameBuffer[--$index] = 0x00FFFFFF;
-                $this->canvasBuffer->data[$index2 -= 4] = 0xFF;
-                $this->canvasBuffer->data[$index2 + 1] = 0xFF;
-                $this->canvasBuffer->data[$index2 + 2] = 0xFF;
-                $this->canvasBuffer->data[$index2 + 3] = 0xFF;
-            }
-
-            $this->drawContext->putImageData($this->canvasBuffer, 0, 0);     //Throws any browser that won't support this later on.
-            // $this->canvasAlt->style->visibility = "hidden"; //Make sure, if restarted, that the fallback images aren't going cover the canvas.
-            // $this->canvas->style->visibility = "visible";
-            $this->canvasFallbackHappened = false;
-        } catch (\Exception $error) {
-            //Falling back to an experimental data URI BMP file canvas alternative:
-            echo "Falling back to BMP imaging as a canvas alternative." . PHP_EOL;
-
-            $this->width = 160;
-            $this->height = 144;
-            $this->canvasFallbackHappened = true;
-            $this->drawContext = new BMPCanvas($this->canvasAlt, 160, 144, Settings::$settings[6][0], Settings::$settings[6][1]);
-            $this->canvasBuffer = new Object();
-
-            $index = 23040;
-            while ($index > 0) {
-                $this->frameBuffer[--$index] = 0x00FFFFFF;
-            }
-            $this->canvasBuffer->data = $this->ArrayPad(92160, 0xFF);
-            $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
-            //Make visible only after the images have been initialized.
-            $this->canvasAlt->style->visibility = "visible";
-            $this->canvas->style->visibility = "hidden";            //Speedier layout in some browsers.
+        while ($index > 0) {
+            $this->frameBuffer[--$index] = 0x00FFFFFF;
+            $this->canvasBuffer->data[$index2 -= 4] = 0xFF;
+            $this->canvasBuffer->data[$index2 + 1] = 0xFF;
+            $this->canvasBuffer->data[$index2 + 2] = 0xFF;
+            $this->canvasBuffer->data[$index2 + 3] = 0xFF;
         }
+
+        $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
+        $this->canvasFallbackHappened = false;
     }
 
     public function JoyPadEvent($key, $down)
     {
         if ($down) {
             $this->JoyPad &= 0xFF ^ (1 << $key);
-            /*if (!$this->cGBC) {
-                $this->memory[0xFF0F] |= 0x10;    //A real GBC doesn't set this!
-            }*/
         } else {
             $this->JoyPad |= (1 << $key);
         }
@@ -1481,7 +1247,7 @@ class Core
                 if (($this->stopEmulator & 1) == 1) {
                     $this->stopEmulator = 0;
                     $this->clockUpdate();         //Frame skip and RTC code.
-                    // $this->audioUpdate();         //Lookup the rollover buffer and output WAVE PCM samples if sound is on and have fallen back to it.
+
                     if (!$this->halt) {           //If no HALT... Execute normally
                         $this->executeIteration();
                     }
@@ -1623,24 +1389,15 @@ class Core
         // LCD Timing
         $this->LCDTicks += $timedTicks;                //LCD timing
         $this->LCDCONTROL[$this->actualScanLine]($this); //Scan Line and STAT Mode Control
+
         //Audio Timing
         $this->audioTicks += $timedTicks;              //Not the same as the LCD timing (Cannot be altered by display on/off changes!!!).
+
         if ($this->audioTicks >= Settings::$settings[11]) {      //Are we past the granularity setting?
-            $amount = $this->audioTicks * $this->samplesOut;
-            $actual = floor($amount);
-            $this->rollover += $amount - $actual;
-            if ($this->rollover >= 1) {
-                $this->rollover -= 1;
-                $actual += 1;
-            }
-            if (!$this->audioOverflow && $actual > 0) {
-                $this->generateAudio($actual);
-            }
             //Emulator Timing (Timed against audio for optimization):
             $this->emulatorTicks += $this->audioTicks;
             if ($this->emulatorTicks >= Settings::$settings[13]) {
                 if (($this->stopEmulator & 1) == 0) { //Make sure we don't overdo the audio.
-                    $this->playAudio();               //Output all the samples built up.
                     if ($this->drewBlank == 0) {      //LCD off takes at least 2 frames.
                         $this->drawToCanvas();        //Display frame
                     }
@@ -1650,6 +1407,7 @@ class Core
             }
             $this->audioTicks = 0;
         }
+
         // Internal Timer
         if ($this->TIMAEnabled) {
             $this->timerTicks += $this->CPUTicks;
@@ -1864,7 +1622,7 @@ class Core
     public function clockUpdate() {
         //We're tying in the same timer for RTC and frame skipping, since we can and this reduces load.
         if (Settings::$settings[7] || $this->cTIMER) {
-            $timeElapsed = microtime(true) - $this->lastIteration;    //Get the numnber of milliseconds since this last executed.
+            $timeElapsed = ((int) (microtime(true) * 1000)) - $this->lastIteration;    //Get the numnber of milliseconds since this last executed.
             if ($this->cTIMER && !$this->RTCHALT) {
                 //Update the MBC3 RTC:
                 $this->RTCSeconds += $timeElapsed / 1000;
@@ -1898,7 +1656,7 @@ class Core
                     Settings::$settings[4]--;
                 }
             }
-            $this->lastIteration = microtime();
+            $this->lastIteration = (int) (microtime() * 1000);
         }
     }
 
@@ -1994,7 +1752,7 @@ class Core
                 $this->gbColorizedPalette[$startIndex + 3] = ($pal4 >= 0x80000000) ? $pal4 : 0xFFFFFFFF;
             }
 
-            //@TODO - Need to copy the new palette
+            //@PHP - Need to copy the new palette
             $this->checkPaletteType();
         }
     }
@@ -2866,267 +2624,87 @@ class Core
             $parentObj->TIMAEnabled = ($data & 0x04) == 0x04;
             $parentObj->TACClocker = pow(4, (($data & 0x3) != 0) ? ($data & 0x3) : 4); //TODO: Find a way to not make a conditional in here...
         };
+
+        // BEGIN - Audio Writers
         $this->memoryWriter[0xFF10] = function ($parentObj, $address, $data) {
-            $parentObj->channel1lastTimeSweep = $parentObj->channel1timeSweep = floor((($data & 0x70) >> 4) * $parentObj->channel1TimeSweepPreMultiplier);
-            $parentObj->channel1numSweep = $data & 0x07;
-            $parentObj->channel1frequencySweepDivider = 1 << $parentObj->channel1numSweep;
-            $parentObj->channel1decreaseSweep = (($data & 0x08) == 0x08);
-            $parentObj->memory[0xFF10] = $data;
         };
         $this->memoryWriter[0xFF11] = function ($parentObj, $address, $data) {
-            $parentObj->channel1duty = $data >> 6;
-            $parentObj->channel1adjustedDuty = $parentObj->dutyLookup[$parentObj->channel1duty];
-            $parentObj->channel1lastTotalLength = $parentObj->channel1totalLength = (0x40 - ($data & 0x3F)) * $parentObj->audioTotalLengthMultiplier;
-            $parentObj->memory[0xFF11] = $data & 0xC0;
         };
         $this->memoryWriter[0xFF12] = function ($parentObj, $address, $data) {
-            $parentObj->channel1envelopeVolume = $data >> 4;
-            $parentObj->channel1currentVolume = $parentObj->channel1envelopeVolume / 0xF;
-            $parentObj->channel1envelopeType = (($data & 0x08) == 0x08);
-            $parentObj->channel1envelopeSweeps = $data & 0x7;
-            $parentObj->channel1volumeEnvTime = $parentObj->channel1envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-            $parentObj->memory[0xFF12] = $data;
         };
         $this->memoryWriter[0xFF13] = function ($parentObj, $address, $data) {
-            $parentObj->channel1frequency = ($parentObj->channel1frequency & 0x700) | $data;
-            //Pre-calculate the frequency computation outside the waveform generator for speed:
-            $parentObj->channel1adjustedFrequencyPrep = $parentObj->preChewedAudioComputationMultiplier / (0x800 - $parentObj->channel1frequency);
-            $parentObj->memory[0xFF13] = $data;
         };
         $this->memoryWriter[0xFF14] = function ($parentObj, $address, $data) {
-            if (($data & 0x80) == 0x80) {
-                $parentObj->channel1envelopeVolume = $parentObj->memory[0xFF12] >> 4;
-                $parentObj->channel1currentVolume = $parentObj->channel1envelopeVolume / 0xF;
-                $parentObj->channel1envelopeSweeps = $parentObj->memory[0xFF12] & 0x7;
-                $parentObj->channel1volumeEnvTime = $parentObj->channel1envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-                $parentObj->channel1totalLength = $parentObj->channel1lastTotalLength;
-                $parentObj->channel1timeSweep = $parentObj->channel1lastTimeSweep;
-                $parentObj->channel1numSweep = $parentObj->memory[0xFF10] & 0x07;
-                $parentObj->channel1frequencySweepDivider = 1 << $parentObj->channel1numSweep;
-                if (($data & 0x40) == 0x40) {
-                    $parentObj->memory[0xFF26] |= 0x1;
-                }
-            }
-            $parentObj->channel1consecutive = (($data & 0x40) == 0x0);
-            $parentObj->channel1frequency = (($data & 0x7) << 8) | ($parentObj->channel1frequency & 0xFF);
-            //Pre-calculate the frequency computation outside the waveform generator for speed:
-            $parentObj->channel1adjustedFrequencyPrep = $parentObj->preChewedAudioComputationMultiplier / (0x800 - $parentObj->channel1frequency);
-            $parentObj->memory[0xFF14] = $data & 0x40;
         };
         $this->memoryWriter[0xFF16] = function ($parentObj, $address, $data) {
-            $parentObj->channel2duty = $data >> 6;
-            $parentObj->channel2adjustedDuty = $parentObj->dutyLookup[$parentObj->channel2duty];
-            $parentObj->channel2lastTotalLength = $parentObj->channel2totalLength = (0x40 - ($data & 0x3F)) * $parentObj->audioTotalLengthMultiplier;
-            $parentObj->memory[0xFF16] = $data & 0xC0;
         };
         $this->memoryWriter[0xFF17] = function ($parentObj, $address, $data) {
-            $parentObj->channel2envelopeVolume = $data >> 4;
-            $parentObj->channel2currentVolume = $parentObj->channel2envelopeVolume / 0xF;
-            $parentObj->channel2envelopeType = (($data & 0x08) == 0x08);
-            $parentObj->channel2envelopeSweeps = $data & 0x7;
-            $parentObj->channel2volumeEnvTime = $parentObj->channel2envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-            $parentObj->memory[0xFF17] = $data;
         };
         $this->memoryWriter[0xFF18] = function ($parentObj, $address, $data) {
-            $parentObj->channel2frequency = ($parentObj->channel2frequency & 0x700) | $data;
-            //Pre-calculate the frequency computation outside the waveform generator for speed:
-            $parentObj->channel2adjustedFrequencyPrep = $parentObj->preChewedAudioComputationMultiplier / (0x800 - $parentObj->channel2frequency);
-            $parentObj->memory[0xFF18] = $data;
         };
         $this->memoryWriter[0xFF19] = function ($parentObj, $address, $data) {
-            if (($data & 0x80) == 0x80) {
-                $parentObj->channel2envelopeVolume = $parentObj->memory[0xFF17] >> 4;
-                $parentObj->channel2currentVolume = $parentObj->channel2envelopeVolume / 0xF;
-                $parentObj->channel2envelopeSweeps = $parentObj->memory[0xFF17] & 0x7;
-                $parentObj->channel2volumeEnvTime = $parentObj->channel2envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-                $parentObj->channel2totalLength = $parentObj->channel2lastTotalLength;
-                if (($data & 0x40) == 0x40) {
-                    $parentObj->memory[0xFF26] |= 0x2;
-                }
-            }
-            $parentObj->channel2consecutive = (($data & 0x40) == 0x0);
-            $parentObj->channel2frequency = (($data & 0x7) << 8) | ($parentObj->channel2frequency & 0xFF);
-            //Pre-calculate the frequency computation outside the waveform generator for speed:
-            $parentObj->channel2adjustedFrequencyPrep = $parentObj->preChewedAudioComputationMultiplier / (0x800 - $parentObj->channel2frequency);
-            $parentObj->memory[0xFF19] = $data & 0x40;
         };
         $this->memoryWriter[0xFF1A] = function ($parentObj, $address, $data) {
-            $parentObj->channel3canPlay = ($data >= 0x80);
-            if ($parentObj->channel3canPlay && ($parentObj->memory[0xFF1A] & 0x80) == 0x80) {
-                $parentObj->channel3totalLength = $parentObj->channel3lastTotalLength;
-                if (!$parentObj->channel3consecutive) {
-                    $parentObj->memory[0xFF26] |= 0x4;
-                }
-            }
-            $parentObj->memory[0xFF1A] = $data & 0x80;
         };
         $this->memoryWriter[0xFF1B] = function ($parentObj, $address, $data) {
-            $parentObj->channel3lastTotalLength = $parentObj->channel3totalLength = (0x100 - $data) * $parentObj->audioTotalLengthMultiplier;
-            $parentObj->memory[0xFF1B] = $data;
         };
         $this->memoryWriter[0xFF1C] = function ($parentObj, $address, $data) {
-            $parentObj->memory[0xFF1C] = $data & 0x60;
-            $parentObj->channel3patternType = $parentObj->memory[0xFF1C] >> 5;
         };
         $this->memoryWriter[0xFF1D] = function ($parentObj, $address, $data) {
-            $parentObj->channel3frequency = ($parentObj->channel3frequency & 0x700) | $data;
-            $parentObj->channel3adjustedFrequencyPrep = $parentObj->preChewedWAVEAudioComputationMultiplier / (0x800 - $parentObj->channel3frequency);
-            $parentObj->memory[0xFF1D] = $data;
         };
         $this->memoryWriter[0xFF1E] = function ($parentObj, $address, $data) {
-            if (($data & 0x80) == 0x80) {
-                $parentObj->channel3totalLength = $parentObj->channel3lastTotalLength;
-                if (($data & 0x40) == 0x40) {
-                    $parentObj->memory[0xFF26] |= 0x4;
-                }
-            }
-            $parentObj->channel3consecutive = (($data & 0x40) == 0x0);
-            $parentObj->channel3frequency = (($data & 0x7) << 8) | ($parentObj->channel3frequency & 0xFF);
-            $parentObj->channel3adjustedFrequencyPrep = $parentObj->preChewedWAVEAudioComputationMultiplier / (0x800 - $parentObj->channel3frequency);
-            $parentObj->memory[0xFF1E] = $data & 0x40;
         };
         $this->memoryWriter[0xFF20] = function ($parentObj, $address, $data) {
-            $parentObj->channel4lastTotalLength = $parentObj->channel4totalLength = (0x40 - ($data & 0x3F)) * $parentObj->audioTotalLengthMultiplier;
-            $parentObj->memory[0xFF20] = $data | 0xC0;
         };
         $this->memoryWriter[0xFF21] = function ($parentObj, $address, $data) {
-            $parentObj->channel4envelopeVolume = $data >> 4;
-            $parentObj->channel4currentVolume = $parentObj->channel4envelopeVolume / 0xF;
-            $parentObj->channel4envelopeType = (($data & 0x08) == 0x08);
-            $parentObj->channel4envelopeSweeps = $data & 0x7;
-            $parentObj->channel4volumeEnvTime = $parentObj->channel4envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-            $parentObj->memory[0xFF21] = $data;
         };
         $this->memoryWriter[0xFF22] = function ($parentObj, $address, $data) {
-            $parentObj->channel4lastSampleLookup = 0;
-            $parentObj->channel4adjustedFrequencyPrep = $parentObj->whiteNoiseFrequencyPreMultiplier / max($data & 0x7, 0.5) / pow(2, ($data >> 4) + 1);
-            $parentObj->noiseTableLookup = (($data & 0x8) == 0x8) ? $parentObj->smallNoiseTable : $parentObj->largeNoiseTable;
-            $parentObj->memory[0xFF22] = $data;
         };
         $this->memoryWriter[0xFF23] = function ($parentObj, $address, $data) {
-            $parentObj->memory[0xFF23] = $data;
-            $parentObj->channel4consecutive = (($data & 0x40) == 0x0);
-            if (($data & 0x80) == 0x80) {
-                $parentObj->channel4lastSampleLookup = 0;
-                $parentObj->channel4envelopeVolume = $parentObj->memory[0xFF21] >> 4;
-                $parentObj->channel4currentVolume = $parentObj->channel4envelopeVolume / 0xF;
-                $parentObj->channel4envelopeSweeps = $parentObj->memory[0xFF21] & 0x7;
-                $parentObj->channel4volumeEnvTime = $parentObj->channel4envelopeSweeps * $parentObj->volumeEnvelopePreMultiplier;
-                $parentObj->channel4totalLength = $parentObj->channel4lastTotalLength;
-                if (($data & 0x40) == 0x40) {
-                    $parentObj->memory[0xFF26] |= 0x8;
-                }
-            }
         };
         $this->memoryWriter[0xFF24] = function ($parentObj, $address, $data) {
-            $parentObj->memory[0xFF24] = $data;
-            /*$parentObj->VinLeftChannelEnabled = (($data >> 7) == 0x1);
-            $parentObj->VinRightChannelEnabled = ((($data >> 3) & 0x1) == 0x1);
-            $parentObj->VinLeftChannelMasterVolume = (($data >> 4) & 0x07);
-            $parentObj->VinRightChannelMasterVolume = ($data & 0x07);
-            $parentObj->vinLeft = ($parentObj->VinLeftChannelEnabled) ? $parentObj->VinLeftChannelMasterVolume / 7 : 1;
-            $parentObj->vinRight = ($parentObj->VinRightChannelEnabled) ? $parentObj->VinRightChannelMasterVolume / 7 : 1;*/
         };
         $this->memoryWriter[0xFF25] = function ($parentObj, $address, $data) {
-            $parentObj->memory[0xFF25] = $data;
-            $parentObj->leftChannel = [($data & 0x01) == 0x01, ($data & 0x02) == 0x02, ($data & 0x04) == 0x04, ($data & 0x08) == 0x08];
-            $parentObj->rightChannel = [($data & 0x10) == 0x10, ($data & 0x20) == 0x20, ($data & 0x40) == 0x40, ($data & 0x80) == 0x80];
         };
         $this->memoryWriter[0xFF26] = function ($parentObj, $address, $data) {
-            $soundEnabled = ($data & 0x80);
-            $parentObj->memory[0xFF26] = $soundEnabled | ($parentObj->memory[0xFF26] & 0xF);
-            $parentObj->soundMasterEnabled = ($soundEnabled == 0x80);
-            if (!$parentObj->soundMasterEnabled) {
-                $parentObj->memory[0xFF26] = 0;
-                $parentObj->initializeStartState();
-                for ($address = 0xFF30; $address < 0xFF40; $address++) {
-                    $parentObj->memory[$address] = 0;
-                }
-            }
         };
         $this->memoryWriter[0xFF30] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[0] = $data >> 4;
-            $parentObj->channel3PCM[1] = $data & 0xF;
-            $parentObj->memory[0xFF30] = $data;
         };
         $this->memoryWriter[0xFF31] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[2] = $data >> 4;
-            $parentObj->channel3PCM[3] = $data & 0xF;
-            $parentObj->memory[0xFF31] = $data;
         };
         $this->memoryWriter[0xFF32] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[4] = $data >> 4;
-            $parentObj->channel3PCM[5] = $data & 0xF;
-            $parentObj->memory[0xFF32] = $data;
         };
         $this->memoryWriter[0xFF33] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[6] = $data >> 4;
-            $parentObj->channel3PCM[7] = $data & 0xF;
-            $parentObj->memory[0xFF33] = $data;
         };
         $this->memoryWriter[0xFF34] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[8] = $data >> 4;
-            $parentObj->channel3PCM[9] = $data & 0xF;
-            $parentObj->memory[0xFF34] = $data;
         };
         $this->memoryWriter[0xFF35] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[10] = $data >> 4;
-            $parentObj->channel3PCM[11] = $data & 0xF;
-            $parentObj->memory[0xFF35] = $data;
         };
         $this->memoryWriter[0xFF36] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[12] = $data >> 4;
-            $parentObj->channel3PCM[13] = $data & 0xF;
-            $parentObj->memory[0xFF36] = $data;
         };
         $this->memoryWriter[0xFF37] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[14] = $data >> 4;
-            $parentObj->channel3PCM[15] = $data & 0xF;
-            $parentObj->memory[0xFF37] = $data;
         };
         $this->memoryWriter[0xFF38] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[16] = $data >> 4;
-            $parentObj->channel3PCM[17] = $data & 0xF;
-            $parentObj->memory[0xFF38] = $data;
         };
         $this->memoryWriter[0xFF39] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[18] = $data >> 4;
-            $parentObj->channel3PCM[19] = $data & 0xF;
-            $parentObj->memory[0xFF39] = $data;
         };
         $this->memoryWriter[0xFF3A] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[20] = $data >> 4;
-            $parentObj->channel3PCM[21] = $data & 0xF;
-            $parentObj->memory[0xFF3A] = $data;
         };
         $this->memoryWriter[0xFF3B] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[22] = $data >> 4;
-            $parentObj->channel3PCM[23] = $data & 0xF;
-            $parentObj->memory[0xFF3B] = $data;
         };
         $this->memoryWriter[0xFF3C] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[24] = $data >> 4;
-            $parentObj->channel3PCM[25] = $data & 0xF;
-            $parentObj->memory[0xFF3C] = $data;
         };
         $this->memoryWriter[0xFF3D] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[26] = $data >> 4;
-            $parentObj->channel3PCM[27] = $data & 0xF;
-            $parentObj->memory[0xFF3D] = $data;
         };
         $this->memoryWriter[0xFF3E] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[28] = $data >> 4;
-            $parentObj->channel3PCM[29] = $data & 0xF;
-            $parentObj->memory[0xFF3E] = $data;
         };
         $this->memoryWriter[0xFF3F] = function ($parentObj, $address, $data) {
-            $parentObj->channel3PCM[30] = $data >> 4;
-            $parentObj->channel3PCM[31] = $data & 0xF;
-            $parentObj->memory[0xFF3F] = $data;
         };
         $this->memoryWriter[0xFF44] = function ($parentObj, $address, $data) {
             //Read only
         };
+        // END - Audio Writers
+        //
         $this->memoryWriter[0xFF45] = function ($parentObj, $address, $data) {
             $parentObj->memory[0xFF45] = $data;
             if ($parentObj->LCDisOn) {
@@ -3449,61 +3027,15 @@ class Core
     }
 
     public function getTypedArray($length, $defaultValue, $numberType) {
-        try {
-            if (Settings::$settings[22]) {
-                throw(new Error(""));
-            }
+        // @PHP - We dont have typed arrays and unsigned int in PHP
+        // This function just creates an array and initialize with a value
+        $arrayHandle = array_fill(0, $length, $defaultValue);
 
-            /*
-            switch ($numberType) {
-                case "uint8":
-                    $arrayHandle = new Uint8Array($length);
-                    break;
-                case "int8":
-                    $arrayHandle = new Int8Array($length);
-                    break;
-                case "uint16":
-                    $arrayHandle = new Uint16Array($length);
-                    break;
-                case "int16":
-                    $arrayHandle = new Int16Array($length);
-                    break;
-                case "uint32":
-                    $arrayHandle = new Uint32Array($length);
-                    break;
-                case "int32":
-                    $arrayHandle = new Int32Array($length);
-                    break;
-                case "float32":
-                    $arrayHandle = new Float32Array($length);
-            }
-            */
-
-            $arrayHandle = array_fill(0, $length, 0);
-
-            if ($defaultValue > 0) {
-                $index = 0;
-                while ($index < $length) {
-                    $arrayHandle[$index++] = $defaultValue;
-                }
-            }
-        }
-        catch (\Exception $error) {
-            $arrayHandle = array_fill(0, $length, 0);
-            $index = 0;
-            while ($index < $length) {
-                $arrayHandle[$index++] = $defaultValue;
-            }
-        }
         return $arrayHandle;
     }
 
     public function ArrayPad($length, $defaultValue) {
-        $arrayHandle = array_fill(0, $length, 0);
-        $index = 0;
-        while ($index < $length) {
-            $arrayHandle[$index++] = $defaultValue;
-        }
+        $arrayHandle = array_fill(0, $length, $defaultValue);
         return $arrayHandle;
     }
 }
