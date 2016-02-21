@@ -2210,10 +2210,9 @@ class Core
             $dst -= $x;
             $src -= $x;
         }
+
         while ($dst < $dstEnd) {
-            if ($im[$src] < 0) {
-                $this->frameBuffer[$dst] = $im[$src];
-            }
+            $this->frameBuffer[$dst] = $im[$src];
             $dst++;
             $src++;
         }
@@ -2232,9 +2231,9 @@ class Core
             $src -= $x;
         }
         while ($dst < $dstEnd) {
-            if ($im[$src] < 0 && $this->frameBuffer[$dst] >= 0) {
+            //if ($im[$src] < 0 && $this->frameBuffer[$dst] >= 0) {
                 $this->frameBuffer[$dst] = $im[$src];
-            }
+            // }
             $dst++;
             $src++;
         }
