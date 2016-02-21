@@ -1,4 +1,4 @@
-<p align="center"><img src="https://www.dropbox.com/s/hi6hmiv6ygs950o/HsaaQZKHrA.gif?dl=0" width="560" alt="PHP Terminal GameBoy Emulator" /></p>
+<p align="center"><img src="https://www.dropbox.com/s/hi6hmiv6ygs950o/HsaaQZKHrA.gif?dl=1" width="560" alt="PHP Terminal GameBoy Emulator" /></p>
 
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](http://gabrielrcouto.mit-license.org/)
 
@@ -41,6 +41,7 @@ $ php boot.php pokemon.rom
 
 ## Controls
 
+```bash
 _n_________________
 |_|_______________|_|
 |  ,-------------.  |
@@ -60,7 +61,7 @@ _n_________________
 |  // //    \\\\\\  |
 |  N  M      \\\\\\ ,
 |________...______,"
-
+```
 
 + Left = A
 + Up = W
