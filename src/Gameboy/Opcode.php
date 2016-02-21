@@ -801,9 +801,8 @@ class Opcode
                     $parentObj->updateCore();
                 }
 
+                //Throw an error on purpose to exit out of the loop.
                 throw new \Exception("HALT_OVERRUN");
-
-                // throw(new Error("HALT_OVERRUN"));       //Throw an error on purpose to exit out of the loop.
             }
         };
         //LD (HL), A
@@ -1701,9 +1700,8 @@ class Opcode
         //0xDB - Illegal
         //#0xDB:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xDB called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xDB called, pausing emulation.";
+            exit();
         };
         //CALL FC, nn
         //#0xDC:
@@ -1725,9 +1723,8 @@ class Opcode
         //0xDD - Illegal
         //#0xDD:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xDD called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xDD called, pausing emulation.";
+            exit();
         };
         //SBC A, n
         //#0xDE:
@@ -1770,16 +1767,14 @@ class Opcode
         //0xE3 - Illegal
         //#0xE3:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xE3 called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xE3 called, pausing emulation.";
+            exit();
         };
         //0xE4 - Illegal
         //#0xE4:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xE4 called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xE4 called, pausing emulation.";
+            exit();
         };
         //PUSH HL
         //#0xE5:
@@ -1832,23 +1827,20 @@ class Opcode
         //0xEB - Illegal
         //#0xEB:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xEB called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xEB called, pausing emulation.";
+            exit();
         };
         //0xEC - Illegal
         //#0xEC:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xEC called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xEC called, pausing emulation.";
+            exit();
         };
         //0xED - Illegal
         //#0xED:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xED called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xED called, pausing emulation.";
+            exit();
         };
         //XOR n
         //#0xEE:
@@ -1956,16 +1948,14 @@ class Opcode
         //0xFC - Illegal
         //#0xFC:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xFC called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xFC called, pausing emulation.";
+            exit();
         };
         //0xFD - Illegal
         //#0xFD:
         $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xFD called, pausing emulation.", 2);
-            // pause();
+            echo "Illegal op code 0xFD called, pausing emulation.";
+            exit();
         };
         //CP n
         //#0xFE:
