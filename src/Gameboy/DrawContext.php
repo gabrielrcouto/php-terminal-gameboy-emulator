@@ -5,7 +5,7 @@ use Drawille\Canvas;
 
 class DrawContext
 {
-    // 160 x 144
+    // Screen size: 160 x 144
 
     protected $canvas;
     protected $currentSecond = 0;
@@ -25,6 +25,10 @@ class DrawContext
      */
 	public function putImageData($canvasBuffer, $left, $top)
     {
+        //Corner pixel, to draw same size each time
+        $this->canvas->set(0, 0);
+        $this->canvas->set(159, 143);
+
         for ($i = 0; $i < count($canvasBuffer); $i = $i + 4) {
             // Sum of all colors, Ignore alpha
             $total = $canvasBuffer[$i] + $canvasBuffer[$i + 1] + $canvasBuffer[$i + 2];
