@@ -1492,7 +1492,7 @@ class Core
                     Settings::$settings[4]--;
                 }
             }
-            $this->lastIteration = (int) (microtime() * 1000);
+            $this->lastIteration = (int) (microtime(true) * 1000);
         }
     }
 
