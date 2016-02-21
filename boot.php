@@ -7,7 +7,7 @@ use GameBoy\Settings;
 
 $rom = base64_decode(file_get_contents('drmario.rom'));
 
-$core = new Core(null, null, $rom);
+$core = new Core($rom);
 $core->start();
 
 if ($core->stopEmulator & 2 == 2) {
