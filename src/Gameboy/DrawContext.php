@@ -26,12 +26,13 @@ class DrawContext
 	public function putImageData($canvasBuffer, $left, $top)
     {
         for ($i = 0; $i < count($canvasBuffer); $i = $i + 4) {
-            // IGNORE ALPHA
+            // Sum of all colors, Ignore alpha
             $total = $canvasBuffer[$i] + $canvasBuffer[$i + 1] + $canvasBuffer[$i + 2];
 
             $x = ($i / 4) % 160;
             $y = ceil(($i / 4) / 160);
 
+            // 350 is a good threshold for black and white
             if ($total > 350) {
                 $this->canvas->set($x, $y);
             }
