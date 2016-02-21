@@ -25,8 +25,6 @@ class DrawContext
      */
 	public function putImageData($canvasBuffer, $left, $top)
     {
-        $canvasBuffer = $canvasBuffer->data;
-
         for ($i = 0; $i < count($canvasBuffer); $i = $i + 4) {
             // IGNORE ALPHA
             $total = $canvasBuffer[$i] + $canvasBuffer[$i + 1] + $canvasBuffer[$i + 2];
@@ -51,10 +49,5 @@ class DrawContext
         echo 'FPS: ' . $this->fps . ' - Frame Skip: ' . Settings::$settings[4] . PHP_EOL;
         echo $this->canvas->frame();
         $this->canvas->clear();
-    }
-
-    public function fillRect($left, $top, $width, $height)
-    {
-        // echo 'Fill' . PHP_EOL;
     }
 }
