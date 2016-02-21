@@ -317,8 +317,6 @@ class Core
 
     public $frameBuffer = [];
 
-    public $scaledFrameBuffer = [];
-
     public $canvasBuffer;
 
     public $gbcRawPalette = [];
@@ -1062,7 +1060,6 @@ class Core
     }
 
     public function initLCD() {
-        $this->scaledFrameBuffer = $this->getTypedArray($this->pixelCount, 0, "int32");   //Used for software side scaling...
         $this->transparentCutoff = (Settings::$settings[17] || $this->cGBC) ? 32 : 4;
         if (count($this->weaveLookup) == 0) {
             //Setup the image decoding lookup table:
