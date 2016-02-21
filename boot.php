@@ -7,7 +7,11 @@ use GameBoy\Core;
 use GameBoy\Keyboard;
 use GameBoy\Settings;
 
-$rom = base64_decode(file_get_contents('pokemon.rom'));
+if (count($argv) < 2) {
+    echo 'You need to pass the ROM file name (Ex: drmario.rom)';
+}
+
+$rom = base64_decode(file_get_contents($argv[1]));
 
 $canvas = new TerminalCanvas();
 $core = new Core($rom, $canvas);
