@@ -1,0 +1,24 @@
+{
+    "name": "gabrielrcouto/php-terminal-gameboy-emulator",
+    "description": "Terminal Gameboy Emular",
+    "keywords": ["terminal","console","gameboy","emulator"],
+    "homepage": "http://github.com/gabrielrcouto/php-terminal-gameboy-emulator",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Gabriel Rodrigues Couto",
+            "email": "gabrielrcouto@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "whatthejeff/drawille": "^1.0"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-0": {
+            "GameBoy": "src/"
+        }
+    }
+}
