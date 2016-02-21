@@ -1,12 +1,11 @@
 <?php
-namespace GameBoy;
+namespace GameBoy\Canvas;
 
 use Drawille\Canvas;
+use GameBoy\Settings;
 
-class DrawContext
+class TerminalCanvas implements DrawContextInterface
 {
-    // Screen size: 160 x 144
-
     protected $canvas;
     protected $currentSecond = 0;
     protected $framesInSecond = 0;
@@ -18,12 +17,13 @@ class DrawContext
     }
 
     /**
-     * Put image on canvas
+     * Draw image on canvas using braille font
+     *
      * @param  Object $canvasBuffer $data = Each pixel = 4 items on array (RGBA)
      * @param  int $left
      * @param  int $top
      */
-	public function putImageData($canvasBuffer, $left, $top)
+	public function draw($canvasBuffer, $left, $top)
     {
         //Corner pixel, to draw same size each time
         $this->canvas->set(0, 0);
