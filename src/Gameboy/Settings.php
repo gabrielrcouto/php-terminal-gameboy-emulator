@@ -15,7 +15,8 @@ class Settings
 		true,
 
         //[3] - Keyboard button map.
-		[39, 37, 38, 40, 88, 90, 16, 13],
+        //Order: Right, Left, Up, Down, A, B, Select, Start
+		['d', 'a', 'w', 's', ',', '.', 'n', 'm'],
 
         //[4] - Frameskip Amount (Auto frameskip setting allows the script to change this.)
 		0,
