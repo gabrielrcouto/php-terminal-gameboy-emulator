@@ -378,8 +378,9 @@ class Core
 
     public $cTIMER = null;
 
-    public function __construct($ROMImage)
+    public function __construct($ROMImage, $drawContext)
     {
+        $this->drawContext = $drawContext;
         $this->ROMImage = $ROMImage;
 
         $this->DISPLAYOFFCONTROL[] = function ($parentObj) {
@@ -1056,8 +1057,6 @@ class Core
             }
         }
 
-        $this->drawContext = new DrawContext();
-
         $this->width = 160;
         $this->height = 144;
 
@@ -1076,7 +1075,7 @@ class Core
             $this->canvasBuffer[$index2 + 3] = 0xFF;
         }
 
-        $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
+        $this->drawContext->draw($this->canvasBuffer, 0, 0);
     }
 
     public function JoyPadEvent($key, $down)
@@ -1395,7 +1394,7 @@ class Core
     public function DisplayShowOff() {
         if ($this->drewBlank == 0) {
             $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
-            $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
+            $this->drawContext->draw($this->canvasBuffer, 0, 0);
             $this->drewBlank = 2;
         }
     }
@@ -1513,7 +1512,7 @@ class Core
             }
 
             //Draw out the CanvasPixelArray data:
-            $this->drawContext->putImageData($this->canvasBuffer, 0, 0);
+            $this->drawContext->draw($this->canvasBuffer, 0, 0);
 
             if (Settings::$settings[4] > 0) {
                 //Decrement the frameskip counter:
