@@ -6,7 +6,7 @@ use GameBoy\Core;
 use GameBoy\Keyboard;
 use GameBoy\Settings;
 
-$rom = base64_decode(file_get_contents('drmario.rom'));
+$rom = base64_decode(file_get_contents('pokemon.rom'));
 
 $core = new Core($rom);
 $keyboard = new Keyboard($core);
