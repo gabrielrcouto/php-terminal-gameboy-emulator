@@ -1,11 +1,10 @@
 <?php
 
-require_once __DIR__.'/vendor/autoload.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 use GameBoy\Canvas\TerminalCanvas;
 use GameBoy\Core;
 use GameBoy\Keyboard;
-use GameBoy\Settings;
 
 if (count($argv) < 2) {
     echo 'You need to pass the ROM file name (Ex: drmario.rom)';
@@ -29,7 +28,6 @@ if ($core->stopEmulator & 2 == 2) {
     }
 } else if (($core->stopEmulator & 2) == 0) {
     echo 'The GameBoy core is already running.' . PHP_EOL;
-}
-else {
+} else {
     echo 'GameBoy core cannot run while it has not been initialized.' . PHP_EOL;
 }
