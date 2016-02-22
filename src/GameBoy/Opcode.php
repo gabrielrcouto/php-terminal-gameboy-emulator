@@ -3,7 +3,7 @@ namespace GameBoy;
 
 class Opcode
 {
-	public $functionsArray = [];
+    public $functionsArray = [];
 
     public function __construct()
     {
@@ -124,23 +124,22 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if ($parentObj->cGBC) {
                 /*TODO: Emulate the speed switch delay:
-                    Delay Amount:
-                    16 ms when going to double-speed.
-                    32 ms when going to single-speed.
-                    Also, bits 4 and 5 of 0xFF00 should read as set (1), while the switch is in process.
-                */
-                if (($parentObj->memory[0xFF4D] & 0x01) == 0x01) {        //Speed change requested.
-                    if (($parentObj->memory[0xFF4D] & 0x80) == 0x80) {    //Go back to single speed mode.
+                Delay Amount:
+                16 ms when going to double-speed.
+                32 ms when going to single-speed.
+                Also, bits 4 and 5 of 0xFF00 should read as set (1), while the switch is in process.
+                 */
+                if (($parentObj->memory[0xFF4D] & 0x01) == 0x01) { //Speed change requested.
+                    if (($parentObj->memory[0xFF4D] & 0x80) == 0x80) { //Go back to single speed mode.
                         // cout("Going into single clock speed mode.", 0);
-                        $parentObj->multiplier = 1;                       //TODO: Move this into the delay done code.
-                        $parentObj->memory[0xFF4D] &= 0x7F;               //Clear the double speed mode flag.
-                    }
-                    else {                                              //Go to double speed mode.
+                        $parentObj->multiplier = 1; //TODO: Move this into the delay done code.
+                        $parentObj->memory[0xFF4D] &= 0x7F; //Clear the double speed mode flag.
+                    } else { //Go to double speed mode.
                         // cout("Going into double clock speed mode.", 0);
-                        $parentObj->multiplier = 2;                       //TODO: Move this into the delay done code.
-                        $parentObj->memory[0xFF4D] |= 0x80;               //Set the double speed mode flag.
+                        $parentObj->multiplier = 2; //TODO: Move this into the delay done code.
+                        $parentObj->memory[0xFF4D] |= 0x80; //Set the double speed mode flag.
                     }
-                    $parentObj->memory[0xFF4D] &= 0xFE;                   //Reset the request bit.
+                    $parentObj->memory[0xFF4D] &= 0xFE; //Reset the request bit.
                 }
             }
         };
@@ -256,8 +255,7 @@ class Opcode
             if (!$parentObj->FZero) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
         };
@@ -327,8 +325,7 @@ class Opcode
             if ($parentObj->FZero) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
         };
@@ -387,8 +384,7 @@ class Opcode
             if (!$parentObj->FCarry) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
         };
@@ -445,8 +441,7 @@ class Opcode
             if ($parentObj->FCarry) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
         };
@@ -776,8 +771,7 @@ class Opcode
                 Involves an edge case where an EI is placed right before a HALT.
                 EI in this case actually is immediate, so we adjust (Hacky?).*/
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter - 1);
-            }
-            else {
+            } else {
                 if (!$parentObj->halt && !$parentObj->IME && !$parentObj->cGBC && !$parentObj->usedBootROM && ($parentObj->memory[0xFF0F] & $parentObj->memory[0xFFFF] & 0x1F) > 0) {
                     $parentObj->skipPCIncrement = true;
                 }
@@ -791,12 +785,12 @@ class Opcode
                     while ($bitShift < 5) {
                         //Check to see if an interrupt is enabled AND requested.
                         if (($testbit & $interrupts) == $testbit) {
-                            $parentObj->halt = false;     //Get out of halt state if in halt state.
-                            return;                     //Let the main interrupt handler compute the interrupt.
+                            $parentObj->halt = false; //Get out of halt state if in halt state.
+                            return; //Let the main interrupt handler compute the interrupt.
                         }
                         $testbit = 1 << ++$bitShift;
                     }
-                    $parentObj->CPUTicks = 1;             //1 machine cycle under HALT...
+                    $parentObj->CPUTicks = 1; //1 machine cycle under HALT...
                     //Timing:
                     $parentObj->updateCore();
                 }
@@ -1173,8 +1167,7 @@ class Opcode
                 $parentObj->FZero = false;
                 $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = true;
                 $parentObj->registerA = 0xFF;
-            }
-            else {
+            } else {
                 $parentObj->FHalfCarry = $parentObj->FCarry = false;
                 $parentObj->FSubtract = $parentObj->FZero = true;
                 $parentObj->registerA = 0;
@@ -1448,8 +1441,7 @@ class Opcode
             if (!$parentObj->FZero) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1470,8 +1462,7 @@ class Opcode
                 $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
                 $parentObj->programCounter = $temp_pc;
                 $parentObj->CPUTicks += 3;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1515,7 +1506,7 @@ class Opcode
         //RET
         //#0xC9:
         $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter =  ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
+            $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
             $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
         };
         //JP FZ, nn
@@ -1524,8 +1515,7 @@ class Opcode
             if ($parentObj->FZero) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1552,8 +1542,7 @@ class Opcode
                 $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
                 $parentObj->programCounter = $temp_pc;
                 $parentObj->CPUTicks += 3;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1611,8 +1600,7 @@ class Opcode
             if (!$parentObj->FCarry) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1635,8 +1623,7 @@ class Opcode
                 $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
                 $parentObj->programCounter = $temp_pc;
                 $parentObj->CPUTicks += 3;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1692,8 +1679,7 @@ class Opcode
             if ($parentObj->FCarry) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
                 $parentObj->CPUTicks++;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };
@@ -1715,8 +1701,7 @@ class Opcode
                 $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
                 $parentObj->programCounter = $temp_pc;
                 $parentObj->CPUTicks += 3;
-            }
-            else {
+            } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
         };

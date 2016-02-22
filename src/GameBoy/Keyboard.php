@@ -20,9 +20,9 @@ class Keyboard
     {
         $key = fread($this->file, 1);
 
-        if (! empty($key)) {
+        if (!empty($key)) {
             $this->keyDown($key);
-        } else if (! empty($this->keyPressing)) {
+        } else if (!empty($this->keyPressing)) {
             $this->keyUp($this->keyPressing);
         }
 

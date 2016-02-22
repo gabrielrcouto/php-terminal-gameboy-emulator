@@ -4,69 +4,69 @@ namespace GameBoy;
 class Settings
 {
     //Some settings.
-	public static $settings = [
+    public static $settings = [
         //[0] - Turn on sound.
-		false,
+        false,
 
         //[1] - Force Mono sound.
-		false,
+        false,
 
         //[2] - Give priority to GameBoy mode
-		true,
+        true,
 
         //[3] - Keyboard button map.
         //Order: Right, Left, Up, Down, A, B, Select, Start
-		['d', 'a', 'w', 's', ',', '.', 'n', 'm'],
+        ['d', 'a', 'w', 's', ',', '.', 'n', 'm'],
 
         //[4] - Frameskip Amount (Auto frameskip setting allows the script to change this.)
-		0,
+        0,
 
         //[5] - Use the data URI BMP method over the canvas tag method?
-		false,
+        false,
 
         //[6] - How many tiles in each direction when using the BMP method (width * height).
-		[16, 12],
+        [16, 12],
 
         //[7] - Auto Frame Skip
-		true,
+        true,
 
         //[8] - Maximum Frame Skip
-		29,
+        29,
 
         //[9] - Override to allow for MBC1 instead of ROM only (compatibility for broken 3rd-party cartridges).
-		true,
+        true,
 
         //[10] - Override MBC RAM disabling and always allow reading and writing to the banks.
-		true,
+        true,
 
         //[11] - Audio granularity setting (Sampling of audio every x many machine cycles)
-		20,
+        20,
 
         //[12] - Frameskip base factor
-		10,
+        10,
 
         //[13] - Target number of machine cycles per loop. (4,194,300 / 1000 * 17)
-		17826,
+        17826,
 
         //[14] - Sample Rate
-		70000,
+        70000,
 
         //[15] - How many bits per WAV PCM sample (For browsers that fall back to WAV PCM generation)
-		0x10,
+        0x10,
 
         //[16] - Use the GBC BIOS?
-		false,
+        false,
 
         //[17] - Colorize GB mode?
-		false,
+        false,
 
         //[18] - Sample size for webkit audio.
-		512,
+        512,
 
         //[19] - Whether to display the canvas at 144x160 on fullscreen or as stretched.
-		false,
+        false,
 
         //[20] - Interval for the emulator loop.
-		17,
-	];
+        17,
+    ];
 }
