@@ -76,11 +76,12 @@ _n_________________
 
 Converting from the JS paradigm was a lot of work, and I still need to adapt somethings like:
 
-+ Code standard - PSRs, please!
-+ Array of functions - Maybe in PHP it's not the best approach
-+ Pixel auxiliary array - Very CPU intersive to convert RGBA every time
-+ Classes - Core is too big!
-+ Profiling and otimizing - XHProf to find the most intensive functions
+- [x] Code standard - PSRs, please!
+- [ ] Array of functions - Maybe in PHP it's not the best approach
+- [ ] Pixel auxiliary array - Very CPU intersive to convert RGBA every time
+- [ ] Classes - Core is too big!
+- [ ] Profiling and otimizing - XHProf to find the most intensive functions
+- [ ] Save/Restore - I need to save my Pokémon, please!
 
 ## Credits
 
