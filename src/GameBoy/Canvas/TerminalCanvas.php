@@ -23,7 +23,7 @@ class TerminalCanvas implements DrawContextInterface
      * @param  int $left
      * @param  int $top
      */
-	public function draw($canvasBuffer, $left, $top)
+    public function draw($canvasBuffer, $left, $top)
     {
         //Corner pixel, to draw same size each time
         $this->canvas->set(0, 0);

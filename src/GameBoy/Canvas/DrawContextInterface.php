@@ -7,12 +7,12 @@ namespace GameBoy\Canvas;
  */
 interface DrawContextInterface
 {
-	/**
+    /**
      * Draw image on canvas
      *
      * @param  Array $canvasBuffer  Each pixel => 4 items on array (RGBA)
      * @param  int $left
      * @param  int $top
      */
-	public function draw($canvasBuffer, $left, $top);
+    public function draw($canvasBuffer, $left, $top);
 }
