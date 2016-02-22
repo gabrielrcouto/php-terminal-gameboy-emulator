@@ -3,10 +3,10 @@ namespace GameBoy;
 
 class Cbopcode
 {
-	public $functionsArray = [];
+    public $functionsArray = [];
 
-	public function __construct()
-	{
+    public function __construct()
+    {
         //#0x00:
         $this->functionsArray[] = function ($parentObj) {
             $parentObj->FCarry = (($parentObj->registerB & 0x80) == 0x80);
@@ -1136,7 +1136,7 @@ class Cbopcode
         $this->functionsArray[] = function ($parentObj) {
             $parentObj->registerA |= 0x80;
         };
-	}
+    }
 
     public function get()
     {
