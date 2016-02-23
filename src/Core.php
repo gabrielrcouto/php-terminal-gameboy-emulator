@@ -362,8 +362,6 @@ class Core
 
     public $DAATable;
 
-    public $GBCBOOTROM;
-
     public $ffxxDump;
 
     public $OPCODE;
@@ -401,7 +399,6 @@ class Core
 
         // Copy Data
         $this->DAATable = Data::$DAATable;
-        $this->GBCBOOTROM = Data::$GBCBOOTROM;
         $this->ffxxDump = Data::$ffxxDump;
 
         $opcode = new Opcode();
@@ -742,7 +739,8 @@ class Core
                 if (!$this->usedBootROM || $romIndex >= 0x900 || ($romIndex >= 0x100 && $romIndex < 0x200)) {
                     $this->memory[$romIndex] = $this->ROM[$romIndex]; //Load in the game ROM.
                 } else {
-                    $this->memory[$romIndex] = $this->GBCBOOTROM[$romIndex]; //Load in the GameBoy Color BOOT ROM.
+                    // Removed GBCROM due copyright ;-)
+                    // $this->memory[$romIndex] = $this->GBCBOOTROM[$romIndex]; //Load in the GameBoy Color BOOT ROM.
                 }
             }
         }
