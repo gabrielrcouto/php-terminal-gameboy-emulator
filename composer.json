@@ -14,6 +14,7 @@
         "php": ">=5.6.0",
         "whatthejeff/drawille": "^1.0"
     },
+    "bin": ["bin/php-gameboy"],
     "require-dev": {
     },
     "autoload": {
