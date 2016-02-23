@@ -36,10 +36,12 @@ about that Windows guys :disappointed:
 
 ## Running
 
+Before: Put your ROMs files (.gb or .gbc) on "roms/" folder.
+
 ```bash
 $ composer install -o
-$ bin/php-gameboy drmario.rom
-$ bin/php-gameboy pokemon.rom
+$ bin/php-gameboy drmario.gb
+$ bin/php-gameboy pokemon.gbc
 ```
 
 ## Controls
