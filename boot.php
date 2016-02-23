@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__.'/vendor/autoload.php';
 
 use GameBoy\Canvas\TerminalCanvas;
 use GameBoy\Core;
@@ -15,7 +15,12 @@ if (count($argv) < 2) {
     throw new RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
 }
 
-$rom = file_get_contents('roms/' . $argv[1]);
+$filename = 'roms/'.$argv[1];
+if (!file_exists($filename)) {
+    throw new RuntimeException(sprintf('"%s" does not exist', $filename));
+}
+
+$rom = file_get_contents($filename);
 
 $canvas = new TerminalCanvas();
 $core = new Core($rom, $canvas);
