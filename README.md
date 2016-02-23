@@ -12,6 +12,7 @@ Want to play Dr Mario or Pokémon on your server terminal? That's for you!
 + [Controls](#controls)
 + [TO-DO](#todo)
 + [Credits](#credits)
++ [Legal](#legal)
 
 ## Why
 
@@ -91,3 +92,10 @@ Converting from the JS paradigm was a lot of work, and I still need to adapt som
 ## Credits
 
 [@gabrielrcouto](http://www.twitter.com/gabrielrcouto)
+
+## Legal
+
+The purpose of this project was to study all the capabilities of PHP.
+It does not have any commercial or profitable intentions.
+The user is responsible to use this code and its content in the terms of the law.
+The author is completely against piracy and respects all the copyrights, trademarks and patents of Nintendo.
