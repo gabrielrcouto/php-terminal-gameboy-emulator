@@ -1,4 +1,5 @@
 <?php
+
 namespace GameBoy;
 
 class Settings

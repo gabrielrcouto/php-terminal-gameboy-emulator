@@ -1,4 +1,5 @@
 <?php
+
 namespace GameBoy;
 
 class Keyboard
@@ -22,7 +23,7 @@ class Keyboard
 
         if (!empty($key)) {
             $this->keyDown($key);
-        } else if (!empty($this->keyPressing)) {
+        } elseif (!empty($this->keyPressing)) {
             $this->keyUp($this->keyPressing);
         }
 

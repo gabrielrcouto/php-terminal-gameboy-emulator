@@ -1,7 +1,8 @@
 <?php
+
 namespace GameBoy;
 
-class TickTables
+class TICKTables
 {
     public static $primary = [
         //Number of machine cycles for each instruction:
