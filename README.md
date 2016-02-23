@@ -38,8 +38,8 @@ about that Windows guys :disappointed:
 
 ```bash
 $ composer install -o
-$ php boot.php drmario.rom
-$ php boot.php pokemon.rom
+$ bin/php-gameboy drmario.rom
+$ bin/php-gameboy pokemon.rom
 ```
 
 ## Controls
