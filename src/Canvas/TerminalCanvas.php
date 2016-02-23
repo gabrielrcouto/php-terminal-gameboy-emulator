@@ -12,6 +12,9 @@ class TerminalCanvas implements DrawContextInterface
     protected $framesInSecond = 0;
     protected $fps = 0;
 
+    private $width = 0;
+    private $height = 0;
+
     public function __construct()
     {
         $this->canvas = new Canvas();
@@ -51,9 +54,21 @@ class TerminalCanvas implements DrawContextInterface
             ++$this->framesInSecond;
         }
 
-        echo "\e[H\e[2J";
-        echo 'FPS: ' . $this->fps . ' - Frame Skip: ' . Settings::$settings[4] . PHP_EOL;
-        echo $this->canvas->frame();
+        $frame = $this->canvas->frame();
+        $content = "\e[H\e[2J";
+
+        if ($this->height > 0 && $this->width > 0) {
+            $content = "\e[{$this->height}A\e[{$this->width}D";
+        }
+
+        $content .= sprintf('FPS: %d - Frame Skip: %s'.PHP_EOL, $this->fps, Settings::$settings[4]);
+        $content .= $frame;
+
+        echo $content;
+
         $this->canvas->clear();
+
+        $this->height = substr_count($frame, PHP_EOL) + 1;
+        $this->width = strpos($frame, PHP_EOL);
     }
 }
