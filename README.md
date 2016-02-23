@@ -34,7 +34,7 @@ You will need a good terminal! Tested on MacOSX and Linux. Sorry Windows guys :-
 ## Running
 
 ```bash
-$ composer install
+$ composer install -o
 $ php boot.php drmario.rom
 $ php boot.php pokemon.rom
 ```
