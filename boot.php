@@ -20,6 +20,12 @@ if (!file_exists($filename)) {
     throw new RuntimeException(sprintf('"%s" does not exist', $filename));
 }
 
+if (extension_loaded('xdebug')) {
+    fwrite(STDERR, 'Running php-gameboy with Xdebug enabled reduces its speed considerably.'.PHP_EOL);
+    fwrite(STDERR, 'You should consider to disable it before execute php-gameboy.'.PHP_EOL);
+    sleep(1);
+}
+
 $rom = file_get_contents($filename);
 
 $canvas = new TerminalCanvas();
