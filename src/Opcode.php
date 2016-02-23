@@ -1,4 +1,5 @@
 <?php
+
 namespace GameBoy;
 
 class Opcode
@@ -254,7 +255,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if (!$parentObj->FZero) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
@@ -324,7 +325,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if ($parentObj->FZero) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
@@ -383,7 +384,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if (!$parentObj->FCarry) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
@@ -440,7 +441,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if ($parentObj->FCarry) {
                 $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
             }
@@ -796,7 +797,7 @@ class Opcode
                 }
 
                 //Throw an error on purpose to exit out of the loop.
-                throw new \Exception("HALT_OVERRUN");
+                throw new \Exception('HALT_OVERRUN');
             }
         };
         //LD (HL), A
@@ -1440,7 +1441,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if (!$parentObj->FZero) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
@@ -1514,7 +1515,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if ($parentObj->FZero) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
@@ -1599,7 +1600,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if (!$parentObj->FCarry) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
@@ -1678,7 +1679,7 @@ class Opcode
         $this->functionsArray[] = function ($parentObj) {
             if ($parentObj->FCarry) {
                 $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->CPUTicks++;
+                ++$parentObj->CPUTicks;
             } else {
                 $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
             }
@@ -1686,7 +1687,7 @@ class Opcode
         //0xDB - Illegal
         //#0xDB:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xDB called, pausing emulation.";
+            echo 'Illegal op code 0xDB called, pausing emulation.';
             exit();
         };
         //CALL FC, nn
@@ -1708,7 +1709,7 @@ class Opcode
         //0xDD - Illegal
         //#0xDD:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xDD called, pausing emulation.";
+            echo 'Illegal op code 0xDD called, pausing emulation.';
             exit();
         };
         //SBC A, n
@@ -1752,13 +1753,13 @@ class Opcode
         //0xE3 - Illegal
         //#0xE3:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xE3 called, pausing emulation.";
+            echo 'Illegal op code 0xE3 called, pausing emulation.';
             exit();
         };
         //0xE4 - Illegal
         //#0xE4:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xE4 called, pausing emulation.";
+            echo 'Illegal op code 0xE4 called, pausing emulation.';
             exit();
         };
         //PUSH HL
@@ -1812,19 +1813,19 @@ class Opcode
         //0xEB - Illegal
         //#0xEB:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xEB called, pausing emulation.";
+            echo 'Illegal op code 0xEB called, pausing emulation.';
             exit();
         };
         //0xEC - Illegal
         //#0xEC:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xEC called, pausing emulation.";
+            echo 'Illegal op code 0xEC called, pausing emulation.';
             exit();
         };
         //0xED - Illegal
         //#0xED:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xED called, pausing emulation.";
+            echo 'Illegal op code 0xED called, pausing emulation.';
             exit();
         };
         //XOR n
@@ -1933,13 +1934,13 @@ class Opcode
         //0xFC - Illegal
         //#0xFC:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xFC called, pausing emulation.";
+            echo 'Illegal op code 0xFC called, pausing emulation.';
             exit();
         };
         //0xFD - Illegal
         //#0xFD:
         $this->functionsArray[] = function ($parentObj) {
-            echo "Illegal op code 0xFD called, pausing emulation.";
+            echo 'Illegal op code 0xFD called, pausing emulation.';
             exit();
         };
         //CP n

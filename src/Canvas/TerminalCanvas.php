@@ -1,4 +1,5 @@
 <?php
+
 namespace GameBoy\Canvas;
 
 use Drawille\Canvas;
@@ -17,11 +18,11 @@ class TerminalCanvas implements DrawContextInterface
     }
 
     /**
-     * Draw image on canvas using braille font
+     * Draw image on canvas using braille font.
      *
-     * @param  Object $canvasBuffer $data = Each pixel = 4 items on array (RGBA)
-     * @param  int $left
-     * @param  int $top
+     * @param object $canvasBuffer $data = Each pixel = 4 items on array (RGBA)
+     * @param int    $left
+     * @param int    $top
      */
     public function draw($canvasBuffer, $left, $top)
     {
@@ -47,7 +48,7 @@ class TerminalCanvas implements DrawContextInterface
             $this->currentSecond = time();
             $this->framesInSecond = 1;
         } else {
-            $this->framesInSecond++;
+            ++$this->framesInSecond;
         }
 
         echo "\e[H\e[2J";
