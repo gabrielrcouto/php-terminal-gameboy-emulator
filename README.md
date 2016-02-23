@@ -15,21 +15,24 @@ Want to play Dr Mario or Pokémon on your server terminal? That's for you!
 
 ## Why
 
-Some people will ask me: "Why you did that?"
+Some people will ask me: _"Why you did that?"_
 
-Well, a friend asked me "What PHP can do?". I thinked about a while, and the idea comes. With PHP 7, it's now possible to emulate some systems because of the performance improvement :-) And come on, it's funny! \o/
+Well, a friend asked me _"What PHP can do?"_. I thought about that awhile and
+the idea came up. With PHP7's performance improvement now it's possible to
+emulate some systems :smile: and, come on, that's funny! :dancers:
 
-It's based on a [GameBoy JS Emulator](https://github.com/taisel/GameBoy-Online).
+It's based on the [GameBoy JS Emulator](https://github.com/taisel/GameBoy-Online).
 
 ## Requirements
 
-The following versions of PHP are supported by this version.
+The following PHP versions are supported:
 
 + PHP 5.6
 + PHP 7
 + HHVM
 
-You will need a good terminal! Tested on MacOSX and Linux. Sorry Windows guys :-(
+You will need a good terminal! I've tested only on MacOSX and Linux. I'm sorry
+about that Windows guys :disappointed:
 
 ## Running
 
