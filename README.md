@@ -35,8 +35,8 @@ You will need a good terminal! Tested on MacOSX and Linux. Sorry Windows guys :-
 
 ```bash
 $ composer install -o
-$ php boot.php drmario.rom
-$ php boot.php pokemon.rom
+$ bin/php-gameboy drmario.rom
+$ bin/php-gameboy pokemon.rom
 ```
 
 ## Controls
