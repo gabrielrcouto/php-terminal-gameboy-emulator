@@ -18,8 +18,8 @@
     "require-dev": {
     },
     "autoload": {
-        "psr-0": {
-            "GameBoy": "src/"
+        "psr-4": {
+            "GameBoy\\": "src/"
         }
     }
 }
