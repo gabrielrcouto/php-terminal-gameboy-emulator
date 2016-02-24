@@ -12,6 +12,7 @@ Want to play Dr Mario or Pokémon on your server terminal? That's for you!
 + [Requirements](#requirements)
 + [Running](#running)
 + [Controls](#controls)
++ [Tests](#tests)
 + [TO-DO](#todo)
 + [Credits](#credits)
 + [Legal](#legal)
