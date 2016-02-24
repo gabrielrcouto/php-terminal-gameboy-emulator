@@ -1,7 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="php-terminal-gameboy-emulator" default="build">
     <property name="vendordir" value="${basedir}/bin" />
-    <target name="check" depends="lint,phpcs"/>
+    <target name="build" depends="prepare,lint,phploc,pdepend,phpmd,phpcs,phpcpd,phpunit"/>
+    <target name="build-parallel" depends="prepare,lint,tools-parallel,phpunit"/>
+    <target name="check" depends="lint,phpcs,phpunit"/>
+
+    <target name="tools-parallel" description="Run tools in parallel">
+        <parallel threadCount="2">
+            <sequential>
+                <antcall target="pdepend"/>
+                <antcall target="phpmd"/>
+            </sequential>
+            <antcall target="phpcpd"/>
+            <antcall target="phpcs"/>
+            <antcall target="phploc"/>
+        </parallel>
+    </target>
+
+    <target name="clean" description="Cleanup build artifacts">
+        <delete dir="${basedir}/build/coverage"/>
+        <delete dir="${basedir}/build/logs"/>
+        <delete dir="${basedir}/build/pdepend"/>
+    </target>
+
+    <target name="prepare" depends="clean" description="Prepare for build">
+        <mkdir dir="${basedir}/build/coverage"/>
+        <mkdir dir="${basedir}/build/logs"/>
+        <mkdir dir="${basedir}/build/pdepend"/>
+        <exec executable="composer" failonerror="true">
+            <arg value="install" />
+        </exec>
+    </target>
 
     <target name="lint" description="Perform syntax check of sourcecode files">
         <apply executable="php" failonerror="true">
@@ -14,11 +43,52 @@
         </apply>
     </target>
 
+    <target name="phploc" description="Measure project size using PHPLOC">
+        <exec executable="${vendordir}/phploc">
+            <arg value="--count-tests" />
+            <arg value="--log-csv" />
+            <arg value="${basedir}/build/logs/phploc.csv" />
+            <arg path="${basedir}/src" />
+        </exec>
+    </target>
+
+    <target name="pdepend" description="Calculate software metrics using PHP_Depend">
+        <exec executable="${vendordir}/pdepend">
+            <arg value="--jdepend-xml=${basedir}/build/logs/jdepend.xml" />
+            <arg value="--jdepend-chart=${basedir}/build/pdepend/dependencies.svg" />
+            <arg value="--overview-pyramid=${basedir}/build/pdepend/overview-pyramid.svg" />
+            <arg path="${basedir}/src" />
+        </exec>
+    </target>
+
+    <target name="phpmd" description="Perform project mess detection using PHPMD and print human readable output. Intended for usage on the command line before committing.">
+        <exec executable="${vendordir}/phpmd">
+            <arg path="${basedir}/src" />
+            <arg value="text" />
+            <arg value="${basedir}/phpmd.xml" />
+        </exec>
+    </target>
+
     <target name="phpcs" description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
-        <exec executable="${vendordir}/phpcs" failonerror="true">
+        <exec executable="${vendordir}/phpcs">
             <arg value="--extensions=php" />
             <arg value="--standard=${basedir}/phpcs.xml" />
             <arg path="${basedir}/src" />
+        </exec>
+    </target>
+
+    <target name="phpcpd" description="Find duplicate code using PHPCPD">
+        <exec executable="${vendordir}/phpcpd">
+            <arg value="--log-pmd" />
+            <arg value="${basedir}/build/logs/pmd-cpd.xml" />
+            <arg path="${basedir}/src" />
+        </exec>
+    </target>
+
+    <target name="phpunit" description="Run unit tests with PHPUnit">
+        <exec executable="${vendordir}/phpunit" failonerror="true">
+            <arg value="-c" />
+            <arg path="${basedir}" />
         </exec>
     </target>
 </project>

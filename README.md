@@ -38,14 +38,48 @@ The following PHP versions are supported:
 You will need a good terminal! I've tested only on MacOSX and Linux. I'm sorry
 about that Windows guys :disappointed:
 
-## Running
+## Installation
 
-Before: Put your ROMs files (.gb or .gbc) on "roms/" folder.
+Using composer:
 
 ```bash
+$ composer g require gabrielrcouto/php-terminal-gameboy-emulator:dev-master
+```
+
+Using PHAR:
+
+```bash
+$ wget https://raw.githubusercontent.com/gabrielrcouto/php-terminal-gameboy-emulator/master/bin/php-gameboy.phar
+$ chmod +x php-gameboy.phar
+$ mv php-gameboy.phar /usr/local/bin/php-gameboy
+```
+
+## Running
+
+```bash
+$ php-gameboy --help
+```
+
+Your roms are loaded from the directory you are running the `php-gameboy` command.
+
+```bash
+$ php-gameboy play drmario.gb
+$ php-gameboy play pokemon.gbc
+```
+
+If you like to run this emulator locally, simple clone the repository:
+
+```bash
+$ git clone https://github.com/gabrielrcouto/php-terminal-gameboy-emulator.git
+$ cd php-terminal-gameboy-emulator
 $ composer install -o
-$ bin/php-gameboy drmario.gb
-$ bin/php-gameboy pokemon.gbc
+```
+
+For running roms, pass the full path to your rom or put then in the `php-terminal-gameboy-emulator` folder:
+
+```bash
+$ bin/php-gameboy play pokemon.gbc
+$ bin/php-gameboy play /full/path/to/your/rom/drmario.gb
 ```
 
 ## Controls
