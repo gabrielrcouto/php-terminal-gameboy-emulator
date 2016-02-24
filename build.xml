@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="php-terminal-gameboy-emulator" default="build">
+    <property name="vendordir" value="${basedir}/bin" />
+    <target name="check" depends="lint,phpcs"/>
+
+    <target name="lint" description="Perform syntax check of sourcecode files">
+        <apply executable="php" failonerror="true">
+            <arg value="-l" />
+
+            <fileset dir="${basedir}/src">
+                <include name="**/*.php" />
+                <modified />
+            </fileset>
+        </apply>
+    </target>
+
+    <target name="phpcs" description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
+        <exec executable="${vendordir}/phpcs" failonerror="true">
+            <arg value="--extensions=php" />
+            <arg value="--standard=${basedir}/phpcs.xml" />
+            <arg path="${basedir}/src" />
+        </exec>
+    </target>
+</project>

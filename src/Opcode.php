@@ -130,12 +130,16 @@ class Opcode
                 32 ms when going to single-speed.
                 Also, bits 4 and 5 of 0xFF00 should read as set (1), while the switch is in process.
                  */
-                if (($parentObj->memory[0xFF4D] & 0x01) == 0x01) { //Speed change requested.
-                    if (($parentObj->memory[0xFF4D] & 0x80) == 0x80) { //Go back to single speed mode.
+
+                // Speed change requested.
+                if (($parentObj->memory[0xFF4D] & 0x01) == 0x01) {
+                    //Go back to single speed mode.
+                    if (($parentObj->memory[0xFF4D] & 0x80) == 0x80) {
                         // cout("Going into single clock speed mode.", 0);
                         $parentObj->multiplier = 1; //TODO: Move this into the delay done code.
                         $parentObj->memory[0xFF4D] &= 0x7F; //Clear the double speed mode flag.
-                    } else { //Go to double speed mode.
+                    //Go to double speed mode.
+                    } else {
                         // cout("Going into double clock speed mode.", 0);
                         $parentObj->multiplier = 2; //TODO: Move this into the delay done code.
                         $parentObj->memory[0xFF4D] |= 0x80; //Set the double speed mode flag.
