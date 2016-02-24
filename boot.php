@@ -1,6 +1,14 @@
 <?php
 
-require_once __DIR__.'/vendor/autoload.php';
+
+foreach (['../../autoload.php', '../vendor/autoload.php', 'vendor/autoload.php'] as $autoload) {
+    $autoload = __DIR__.'/'.$autoload;
+    if (file_exists($autoload)) {
+        require $autoload;
+        break;
+    }
+}
+unset($autoload);
 
 use GameBoy\Canvas\TerminalCanvas;
 use GameBoy\Core;
@@ -15,7 +23,8 @@ if (count($argv) < 2) {
     throw new RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
 }
 
-$filename = 'roms/'.$argv[1];
+$filename = $argv[1];
+
 if (!file_exists($filename)) {
     throw new RuntimeException(sprintf('"%s" does not exist', $filename));
 }
