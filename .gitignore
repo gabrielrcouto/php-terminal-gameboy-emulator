@@ -1,2 +1,4 @@
 material/
 vendor/
+roms/*rom
+cache.properties

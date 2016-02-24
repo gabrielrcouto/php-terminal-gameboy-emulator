@@ -16,6 +16,10 @@
     },
     "bin": ["bin/php-gameboy"],
     "require-dev": {
+        "squizlabs/php_codesniffer": "2.0.*@dev"
+    },
+    "config": {
+        "bin-dir": "bin"
     },
     "autoload": {
         "psr-4": {

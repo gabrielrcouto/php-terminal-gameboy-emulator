@@ -78,6 +78,13 @@ _n_________________
 + Select = N
 + Start = M
 
+## Tests
+
+You can use the following command to run the most common checks, such as `php -l`, `phpcs`:
+
+    $ ant check
+
+
 ## TO-DO
 
 Converting from the JS paradigm was a lot of work, and I still need to adapt somethings like:
