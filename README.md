@@ -1,7 +1,7 @@
 <p align="center"><img src="https://cloud.githubusercontent.com/assets/2197005/13260438/2f6e96ac-da3a-11e5-86cf-bbfa15083f74.gif" width="560" alt="PHP Terminal GameBoy Emulator" /></p>
 
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](http://gabrielrcouto.mit-license.org/)
-[![Packagist](https://img.shields.io/packagist/dt/gabrielrcouto/php-terminal-gameboy-emulator.svg)](https://packagist.org/packages/gabrielrcouto/php-terminal-gameboy-emulator)
+[![Packagist](https://img.shields.io/badge/packagist-install-brightgreen.svg)](https://packagist.org/packages/gabrielrcouto/php-terminal-gameboy-emulator)
 
 Want to play Dr Mario or Pokémon on your server terminal? That's for you!
 
