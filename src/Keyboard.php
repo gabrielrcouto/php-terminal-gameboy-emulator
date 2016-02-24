@@ -49,7 +49,7 @@ class Keyboard
         $keyCode = $this->matchKey($key);
 
         if ($keyCode > -1) {
-            $this->core->JoyPadEvent($keyCode, true);
+            $this->core->joyPadEvent($keyCode, true);
         }
     }
 
@@ -58,7 +58,7 @@ class Keyboard
         $keyCode = $this->matchKey($key);
 
         if ($keyCode > -1) {
-            $this->core->JoyPadEvent($keyCode, false);
+            $this->core->joyPadEvent($keyCode, false);
         }
     }
 }
