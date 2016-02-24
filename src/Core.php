@@ -2326,21 +2326,21 @@ class Core
                                         if ($data < 60) {
                                             $parentObj->RTCSeconds = $data;
                                         } else {
-                                            echo '(Bank #' + $parentObj->currMBCRAMBank + ') RTC write out of range: ' + $data.PHP_EOL;
+                                            echo '(Bank #'.$parentObj->currMBCRAMBank.') RTC write out of range: '.$data.PHP_EOL;
                                         }
                                         break;
                                     case 0x09:
                                         if ($data < 60) {
                                             $parentObj->RTCMinutes = $data;
                                         } else {
-                                            echo '(Bank #' + $parentObj->currMBCRAMBank + ') RTC write out of range: ' + $data.PHP_EOL;
+                                            echo '(Bank #'.$parentObj->currMBCRAMBank.') RTC write out of range: '.$data.PHP_EOL;
                                         }
                                         break;
                                     case 0x0A:
                                         if ($data < 24) {
                                             $parentObj->RTCHours = $data;
                                         } else {
-                                            echo '(Bank #' + $parentObj->currMBCRAMBank + ') RTC write out of range: ' + $data.PHP_EOL;
+                                            echo '(Bank #'.$parentObj->currMBCRAMBank.') RTC write out of range: '.$data.PHP_EOL;
                                         }
                                         break;
                                     case 0x0B:
@@ -2352,7 +2352,7 @@ class Core
                                         $parentObj->RTCDays = (($data & 0x1) << 8) | ($parentObj->RTCDays & 0xFF);
                                         break;
                                     default:
-                                        echo 'Invalid MBC3 bank address selected: ' + $parentObj->currMBCRAMBank.PHP_EOL;
+                                        echo 'Invalid MBC3 bank address selected: '.$parentObj->currMBCRAMBank.PHP_EOL;
                                 }
                             }
                         };
@@ -2765,7 +2765,7 @@ class Core
             $this->memoryWriter[0xFF6C] = function ($parentObj, $address, $data) {
                 if ($parentObj->inBootstrap) {
                     $parentObj->cGBC = ($data == 0x80);
-                    echo 'Booted to GBC Mode: ' + $parentObj->cGBC.PHP_EOL;
+                    echo 'Booted to GBC Mode: '.$parentObj->cGBC.PHP_EOL;
                 }
                 $parentObj->memory[0xFF6C] = $data;
             };
