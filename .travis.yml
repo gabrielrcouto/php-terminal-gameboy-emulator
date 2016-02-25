@@ -12,9 +12,7 @@ install:
   - travis_retry composer install --no-interaction --prefer-source --dev
 
 script:
-  - ant check
+  - ant build
 
 matrix:
-  allow_failures:
-    - php: hhvm
   fast_finish: true

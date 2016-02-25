@@ -1,6 +1,24 @@
-material/
-vendor/
-roms/*rom
+# root
 cache.properties
-bin/phpcs
+
+# bin
+bin/pdepend
 bin/phpcbf
+bin/phpcpd
+bin/phpcs
+bin/phploc
+bin/phpmd
+bin/phpunit
+bin/php-gameboy.phar
+
+# build
+build/
+
+# material
+material/
+
+# vendor
+vendor/
+
+# roms
+roms/*rom
