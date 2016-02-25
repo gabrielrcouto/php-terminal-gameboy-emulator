@@ -40,8 +40,18 @@ about that Windows guys :disappointed:
 
 ## Installation
 
+Using composer:
+
 ```bash
 $ composer g require gabrielrcouto/php-terminal-gameboy-emulator:dev-master
+```
+
+Using PHAR:
+
+```bash
+$ wget https://raw.githubusercontent.com/gabrielrcouto/php-terminal-gameboy-emulator/master/bin/php-gameboy.phar
+$ chmod +x php-gameboy.phar
+$ mv php-gameboy.phar /usr/local/bin/php-gameboy
 ```
 
 ## Running
