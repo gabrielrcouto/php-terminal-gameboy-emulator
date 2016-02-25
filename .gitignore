@@ -2,3 +2,5 @@ material/
 vendor/
 roms/*rom
 cache.properties
+bin/phpcs
+bin/phpcbf
