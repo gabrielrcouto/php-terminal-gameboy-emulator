@@ -6,10 +6,10 @@ class LcdController
 {
     protected $core;
 
-	public function __construct($core)
-	{
+    public function __construct($core)
+    {
         $this->core = $core;
-	}
+    }
 
     /**
      * Scan Line and STAT Mode Control
