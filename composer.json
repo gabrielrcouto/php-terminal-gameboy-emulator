@@ -16,7 +16,8 @@
     },
     "bin": ["bin/php-gameboy"],
     "require-dev": {
-        "squizlabs/php_codesniffer": "2.0.*@dev"
+        "squizlabs/php_codesniffer": "2.0.*@dev",
+        "symfony/finder" : "*"
     },
     "config": {
         "bin-dir": "bin"

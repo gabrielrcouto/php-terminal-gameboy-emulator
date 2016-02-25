@@ -1,0 +1,76 @@
+#!/usr/bin/env php
+<?php
+
+use Symfony\Component\Finder\Finder;
+
+require_once(__DIR__ . '/../vendor/autoload.php');
+
+$rootDir = __DIR__ . '/..';
+
+$filename = 'php-gameboy.phar';
+$filePath = $rootDir . '/bin/' . $filename;
+$stub = <<<STUB
+#!/usr/bin/env php
+<?php
+
+Phar::mapPhar("php-gameboy.phar");
+
+require_once("phar://php-gameboy.phar/php-terminal-gameboy-emulator/boot.php");
+
+__HALT_COMPILER();
+
+STUB;
+
+if (file_exists($filePath)) {
+    unlink($filePath);
+}
+
+$finderSort = function ($a, $b) {
+    return strcmp(strtr($a->getRealPath(), '\\', '/'), strtr($b->getRealPath(), '\\', '/'));
+};
+
+function addFile($phar, $file)
+{
+    $path = strtr(str_replace(dirname(dirname(__DIR__)).DIRECTORY_SEPARATOR, '', $file->getRealPath()), '\\', '/');
+
+    $content = file_get_contents($file);
+
+    $phar->addFromString($path, $content);
+}
+
+$phar = new Phar(
+    $filePath,
+    FilesystemIterator::CURRENT_AS_FILEINFO | FilesystemIterator::KEY_AS_FILENAME,
+    $filename
+);
+$phar->setSignatureAlgorithm(\Phar::SHA1);
+$phar->startBuffering();
+
+$finder = new Finder();
+$finder->files()
+    ->ignoreVCS(true)
+    ->name('*.php')
+    ->exclude('bin')
+    ->exclude('.gitignore')
+    ->exclude('.travis.yml')
+    ->exclude('README.md')
+    ->exclude('build.xml')
+    ->exclude('cache.properties')
+    ->exclude('composer.json')
+    ->exclude('composer.lock')
+    ->exclude('docker-php-7')
+    ->exclude('phpcs.xml')
+    ->exclude('.git')
+    ->in($rootDir)
+    ->sort($finderSort)
+;
+
+foreach ($finder as $file) {
+    addFile($phar, $file);
+}
+
+$phar->setStub($stub);
+
+$phar->stopBuffering();
+
+chmod($filePath, 0775);
