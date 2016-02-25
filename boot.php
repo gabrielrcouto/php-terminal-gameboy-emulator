@@ -1,6 +1,5 @@
 <?php
 
-
 foreach (['../../autoload.php', '../vendor/autoload.php', 'vendor/autoload.php'] as $autoload) {
     $autoload = __DIR__.'/'.$autoload;
     if (file_exists($autoload)) {
@@ -13,15 +12,14 @@ unset($autoload);
 use GameBoy\Canvas\TerminalCanvas;
 use GameBoy\Core;
 use GameBoy\Keyboard;
+use GameBoy\HelpMessage;
 
 set_exception_handler(function (Exception $exception) {
     fwrite(STDERR, $exception->getMessage().PHP_EOL);
     exit(254);
 });
 
-if (count($argv) < 2) {
-    throw new RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
-}
+new HelpMessage($argv);
 
 $filename = $argv[1];
 

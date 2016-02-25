@@ -1,6 +1,7 @@
 {
     "name": "gabrielrcouto/php-terminal-gameboy-emulator",
     "description": "Terminal Gameboy Emular",
+    "version" : "1.0.0-dev",
     "keywords": ["terminal","console","gameboy","emulator"],
     "homepage": "http://github.com/gabrielrcouto/php-terminal-gameboy-emulator",
     "license": "MIT",
