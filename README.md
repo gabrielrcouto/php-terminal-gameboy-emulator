@@ -13,7 +13,7 @@ Want to play Dr Mario or Pokémon on your server terminal? That's for you!
 + [Running](#running)
 + [Controls](#controls)
 + [Tests](#tests)
-+ [TO-DO](#todo)
++ [TO-DO](#to-do)
 + [Credits](#credits)
 + [Legal](#legal)
 
