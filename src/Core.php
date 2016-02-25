@@ -170,13 +170,8 @@ class Core
     //Is the emulated LCD controller on?
     public $LCDisOn = false;
 
-    //Array of functions to handle each scan line we do (onscreen + offscreen)
-    public $LINECONTROL;
-
-    public $DISPLAYOFFCONTROL = [];
-
-    //Pointer to either LINECONTROL or DISPLAYOFFCONTROL.
-    public $LCDCONTROL = null;
+    //lcdControllerler object
+    public $lcdController = null;
 
     public $gfxWindowY = false;
 
@@ -382,10 +377,6 @@ class Core
         $this->drawContext = $drawContext;
         $this->ROMImage = $ROMImage;
 
-        $this->DISPLAYOFFCONTROL[] = function ($parentObj) {
-            //Array of line 0 function to handle the LCD controller when it's off (Do nothing!).
-        };
-
         $this->tileCountInvalidator = $this->tileCount * 4;
 
         $this->ROMBanks[0x52] = 72;
@@ -411,7 +402,8 @@ class Core
         $this->TICKTable = TICKTables::$primary;
         $this->SecondaryTICKTable = TICKTables::$secondary;
 
-        $this->LINECONTROL = array_fill(0, 154, null);
+        //Initialize the LCD Controller
+        $this->lcdController = new LcdController($this);
     }
 
     public function saveState()
@@ -624,7 +616,6 @@ class Core
         $this->tileCountInvalidator = $this->tileCount * 4;
         $this->fromSaveState = true;
         $this->checkPaletteType();
-        $this->initializeLCDController();
         $this->memoryReadJumpCompile();
         $this->memoryWriteJumpCompile();
         $this->initLCD();
@@ -634,7 +625,6 @@ class Core
     public function start()
     {
         Settings::$settings[4] = 0; //Reset the frame skip setting.
-        $this->initializeLCDController(); //Compile the LCD controller functions.
         $this->initMemory(); //Write the startup memory.
         $this->ROMLoad(); //Load the ROM into memory and get cartridge information from it.
         $this->initLCD(); //Initializae the graphics.
@@ -1249,7 +1239,7 @@ class Core
         $timedTicks = $this->CPUTicks / $this->multiplier;
         // LCD Timing
         $this->LCDTicks += $timedTicks; //LCD timing
-        $this->LCDCONTROL[$this->actualScanLine]($this); //Scan Line and STAT Mode Control
+        $this->lcdController->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
 
         //Audio Timing
         $this->audioTicks += $timedTicks; //Not the same as the LCD timing (Cannot be altered by display on/off changes!!!).
@@ -1285,120 +1275,6 @@ class Core
                 }
             }
         }
-    }
-
-    public function initializeLCDController()
-    {
-        //Display on hanlding:
-        $line = 0;
-
-        while ($line < 154) {
-            if ($line < 143) {
-                //We're on a normal scan line:
-                $this->LINECONTROL[$line] = function ($parentObj) {
-                    if ($parentObj->LCDTicks < 20) {
-                        $parentObj->scanLineMode2(); // mode2: 80 cycles
-                    } elseif ($parentObj->LCDTicks < 63) {
-                        $parentObj->scanLineMode3(); // mode3: 172 cycles
-                    } elseif ($parentObj->LCDTicks < 114) {
-                        $parentObj->scanLineMode0(); // mode0: 204 cycles
-                    } else {
-                        //We're on a new scan line:
-                        $parentObj->LCDTicks -= 114;
-                        $parentObj->actualScanLine = ++$parentObj->memory[0xFF44];
-                        $parentObj->matchLYC();
-                        if ($parentObj->STATTracker != 2) {
-                            if ($parentObj->hdmaRunning && !$parentObj->halt && $parentObj->LCDisOn) {
-                                $parentObj->performHdma(); //H-Blank DMA
-                            }
-                            if ($parentObj->mode0TriggerSTAT) {
-                                $parentObj->memory[0xFF0F] |= 0x2; // set IF bit 1
-                            }
-                        }
-                        $parentObj->STATTracker = 0;
-                        $parentObj->scanLineMode2(); // mode2: 80 cycles
-                        if ($parentObj->LCDTicks >= 114) {
-                            //We need to skip 1 or more scan lines:
-                            $parentObj->notifyScanline();
-                            $parentObj->LCDCONTROL[$parentObj->actualScanLine]($parentObj); //Scan Line and STAT Mode Control
-                        }
-                    }
-                };
-            } elseif ($line == 143) {
-                //We're on the last visible scan line of the LCD screen:
-                $this->LINECONTROL[143] = function ($parentObj) {
-                    if ($parentObj->LCDTicks < 20) {
-                        $parentObj->scanLineMode2(); // mode2: 80 cycles
-                    } elseif ($parentObj->LCDTicks < 63) {
-                        $parentObj->scanLineMode3(); // mode3: 172 cycles
-                    } elseif ($parentObj->LCDTicks < 114) {
-                        $parentObj->scanLineMode0(); // mode0: 204 cycles
-                    } else {
-                        //Starting V-Blank:
-                        //Just finished the last visible scan line:
-                        $parentObj->LCDTicks -= 114;
-                        $parentObj->actualScanLine = ++$parentObj->memory[0xFF44];
-                        $parentObj->matchLYC();
-                        if ($parentObj->mode1TriggerSTAT) {
-                            $parentObj->memory[0xFF0F] |= 0x2; // set IF bit 1
-                        }
-                        if ($parentObj->STATTracker != 2) {
-                            if ($parentObj->hdmaRunning && !$parentObj->halt && $parentObj->LCDisOn) {
-                                $parentObj->performHdma(); //H-Blank DMA
-                            }
-                            if ($parentObj->mode0TriggerSTAT) {
-                                $parentObj->memory[0xFF0F] |= 0x2; // set IF bit 1
-                            }
-                        }
-                        $parentObj->STATTracker = 0;
-                        $parentObj->modeSTAT = 1;
-                        $parentObj->memory[0xFF0F] |= 0x1; // set IF flag 0
-                        //LCD off takes at least 2 frames.
-                        if ($parentObj->drewBlank > 0) {
-                            --$parentObj->drewBlank;
-                        }
-                        if ($parentObj->LCDTicks >= 114) {
-                            //We need to skip 1 or more scan lines:
-                            $parentObj->LCDCONTROL[$parentObj->actualScanLine]($parentObj); //Scan Line and STAT Mode Control
-                        }
-                    }
-                };
-            } elseif ($line < 153) {
-                //In VBlank
-                $this->LINECONTROL[$line] = function ($parentObj) {
-                    if ($parentObj->LCDTicks >= 114) {
-                        //We're on a new scan line:
-                        $parentObj->LCDTicks -= 114;
-                        $parentObj->actualScanLine = ++$parentObj->memory[0xFF44];
-                        $parentObj->matchLYC();
-                        if ($parentObj->LCDTicks >= 114) {
-                            //We need to skip 1 or more scan lines:
-                            $parentObj->LCDCONTROL[$parentObj->actualScanLine]($parentObj); //Scan Line and STAT Mode Control
-                        }
-                    }
-                };
-            } else {
-                //VBlank Ending (We're on the last actual scan line)
-                $this->LINECONTROL[153] = function ($parentObj) {
-                    if ($parentObj->memory[0xFF44] == 153) {
-                        $parentObj->memory[0xFF44] = 0; //LY register resets to 0 early.
-                        $parentObj->matchLYC(); //LY==LYC Test is early here (Fixes specific one-line glitches (example: Kirby2 intro)).
-                    }
-                    if ($parentObj->LCDTicks >= 114) {
-                        //We reset back to the beginning:
-                        $parentObj->LCDTicks -= 114;
-                        $parentObj->actualScanLine = 0;
-                        $parentObj->scanLineMode2(); // mode2: 80 cycles
-                        if ($parentObj->LCDTicks >= 114) {
-                            //We need to skip 1 or more scan lines:
-                            $parentObj->LCDCONTROL[$parentObj->actualScanLine]($parentObj); //Scan Line and STAT Mode Control
-                        }
-                    }
-                };
-            }
-            ++$line;
-        }
-        $this->LCDCONTROL = ($this->LCDisOn) ? $this->LINECONTROL : $this->DISPLAYOFFCONTROL;
     }
 
     public function displayShowOff()
@@ -2566,9 +2442,7 @@ class Core
                     $parentObj->STATTracker = $parentObj->modeSTAT = $parentObj->LCDTicks = $parentObj->actualScanLine = $parentObj->memory[0xFF44] = 0;
                     if ($parentObj->LCDisOn) {
                         $parentObj->matchLYC(); //Get the compare of the first scan line.
-                        $parentObj->LCDCONTROL = $parentObj->LINECONTROL;
                     } else {
-                        $parentObj->LCDCONTROL = $parentObj->DISPLAYOFFCONTROL;
                         $parentObj->displayShowOff();
                     }
                     $parentObj->memory[0xFF0F] &= 0xFD;
@@ -2697,9 +2571,7 @@ class Core
                     $parentObj->STATTracker = $parentObj->modeSTAT = $parentObj->LCDTicks = $parentObj->actualScanLine = $parentObj->memory[0xFF44] = 0;
                     if ($parentObj->LCDisOn) {
                         $parentObj->matchLYC(); //Get the compare of the first scan line.
-                        $parentObj->LCDCONTROL = $parentObj->LINECONTROL;
                     } else {
-                        $parentObj->LCDCONTROL = $parentObj->DISPLAYOFFCONTROL;
                         $parentObj->displayShowOff();
                     }
                     $parentObj->memory[0xFF0F] &= 0xFD;
