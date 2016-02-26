@@ -2,6 +2,7 @@
 <?php
 
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Finder\SplFileInfo;
 
 require_once(__DIR__ . '/../vendor/autoload.php');
 
@@ -46,22 +47,19 @@ $phar = new Phar(
 $phar->setSignatureAlgorithm(\Phar::SHA1);
 $phar->startBuffering();
 
+addFile($phar, new SplFileInfo('boot.php', $rootDir . '/boot.php', 'boot.php'));
+addFile($phar, new SplFileInfo('composer.json', $rootDir . '/composer.json', 'composer.json'));
+addFile($phar, new SplFileInfo('vendor/autoload.php', $rootDir . '/vendor/autoload.php', 'vendor/autoload.php'));
+
 $finder = new Finder();
 $finder->files()
     ->ignoreVCS(true)
     ->name('*.php')
-    ->exclude('bin')
-    ->exclude('.gitignore')
-    ->exclude('.travis.yml')
-    ->exclude('README.md')
-    ->exclude('build.xml')
-    ->exclude('cache.properties')
-    ->exclude('composer.json')
-    ->exclude('composer.lock')
-    ->exclude('docker-php-7')
-    ->exclude('phpcs.xml')
-    ->exclude('.git')
-    ->in($rootDir)
+    ->in([
+        $rootDir . '/src/',
+        $rootDir . '/vendor/composer',
+        $rootDir . '/vendor/whatthejeff',
+    ])
     ->sort($finderSort)
 ;
 

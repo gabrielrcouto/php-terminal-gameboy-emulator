@@ -1,9 +1,21 @@
-material/
-vendor/
+# root
 cache.properties
-bin/phpcs
-bin/phpcbf
+
+# bin
+bin/*
+!bin/php-gameboy
+!bin/php-gameboy.phar
+
+# material
+material/
+
+# vendor
+vendor/
+
+# roms
 roms/
+
+# global
 *.gb
 *.gbc
 *.rom
