@@ -360,10 +360,6 @@ class Core
 
     public $ffxxDump;
 
-    public $OPCODE;
-
-    public $CBOPCODE;
-
     public $TICKTable;
 
     public $SecondaryTICKTable;
@@ -392,12 +388,6 @@ class Core
         // Copy Data
         $this->DAATable = Data::$DAATable;
         $this->ffxxDump = Data::$ffxxDump;
-
-        $opcode = new Opcode();
-        $this->OPCODE = $opcode->get();
-
-        $cbopcode = new Cbopcode();
-        $this->CBOPCODE = $cbopcode->get();
 
         $this->TICKTable = TICKTables::$primary;
         $this->SecondaryTICKTable = TICKTables::$secondary;
@@ -1095,7 +1085,7 @@ class Core
                     //If we bailed out of a halt because the iteration ran down its timing.
                     } else {
                         $this->CPUTicks = 1;
-                        $this->OPCODE[0x76]($this);
+                        Opcode::run($this, 0x76);
                         //Execute Interrupt:
                         $this->runInterrupt();
                         //Timing:
@@ -1131,7 +1121,7 @@ class Core
             //Get how many CPU cycles the current op code counts for:
             $this->CPUTicks = $this->TICKTable[$op];
             //Execute the OP code instruction:
-            $this->OPCODE[$op]($this);
+            Opcode::run($this, $op);
             //Interrupt Arming:
             switch ($this->untilEnable) {
                 case 1:

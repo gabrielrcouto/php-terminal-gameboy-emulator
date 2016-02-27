@@ -2,1974 +2,3772 @@
 
 namespace GameBoy;
 
+use Exception;
+
 class Opcode
 {
-    public $functionsArray = [];
-
-    public function __construct()
+    /**
+     * Run the given opcode.
+     *
+     * @param Core $core
+     * @param int $address
+     * @return mixed
+     */
+    public static function run(Core $core, $address)
     {
-        //NOP
-        //#0x00:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do Nothing...
-        };
-        //LD BC, nn
-        //#0x01:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->registerB = $parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //LD (BC), A
-        //#0x02:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite(($parentObj->registerB << 8) + $parentObj->registerC, $parentObj->registerA);
-        };
-        //INC BC
-        //#0x03:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = ((($parentObj->registerB << 8) + $parentObj->registerC) + 1);
-            $parentObj->registerB = (($temp_var >> 8) & 0xFF);
-            $parentObj->registerC = ($temp_var & 0xFF);
-        };
-        //INC B
-        //#0x04:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = (($parentObj->registerB + 1) & 0xFF);
-            $parentObj->FZero = ($parentObj->registerB == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerB & 0xF) == 0);
-            $parentObj->FSubtract = false;
-        };
-        //DEC B
-        //#0x05:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->unsbtub($parentObj->registerB - 1);
-            $parentObj->FZero = ($parentObj->registerB == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerB & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-        };
-        //LD B, n
-        //#0x06:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RLCA
-        //#0x07:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->FCarry = (($parentObj->registerA & 0x80) == 0x80);
-            $parentObj->registerA = (($parentObj->registerA << 1) & 0xFF) | ($parentObj->registerA >> 7);
-            $parentObj->FZero = $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //LD (nn), SP
-        //#0x08:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->memoryWrite($temp_var, $parentObj->stackPointer & 0xFF);
-            $parentObj->memoryWrite(($temp_var + 1) & 0xFFFF, $parentObj->stackPointer >> 8);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //ADD HL, BC
-        //#0x09:
-        $this->functionsArray[] = function ($parentObj) {
-            $n2 = ($parentObj->registerB << 8) + $parentObj->registerC;
-            $dirtySum = $parentObj->registersHL + $n2;
-            $parentObj->FHalfCarry = (($parentObj->registersHL & 0xFFF) + ($n2 & 0xFFF) > 0xFFF);
-            $parentObj->FCarry = ($dirtySum > 0xFFFF);
-            $parentObj->registersHL = ($dirtySum & 0xFFFF);
-            $parentObj->FSubtract = false;
-        };
-        //LD A, (BC)
-        //#0x0A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryRead(($parentObj->registerB << 8) + $parentObj->registerC);
-        };
-        //DEC BC
-        //#0x0B:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->unswtuw((($parentObj->registerB << 8) + $parentObj->registerC) - 1);
-            $parentObj->registerB = ($temp_var >> 8);
-            $parentObj->registerC = ($temp_var & 0xFF);
-        };
-        //INC C
-        //#0x0C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = (($parentObj->registerC + 1) & 0xFF);
-            $parentObj->FZero = ($parentObj->registerC == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerC & 0xF) == 0);
-            $parentObj->FSubtract = false;
-        };
-        //DEC C
-        //#0x0D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->unsbtub($parentObj->registerC - 1);
-            $parentObj->FZero = ($parentObj->registerC == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerC & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-        };
-        //LD C, n
-        //#0x0E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RRCA
-        //#0x0F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->FCarry = (($parentObj->registerA & 1) == 1);
-            $parentObj->registerA = ($parentObj->registerA >> 1) + (($parentObj->registerA & 1) << 7);
-            $parentObj->FZero = $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //STOP
-        //#0x10:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->cGBC) {
-                /*TODO: Emulate the speed switch delay:
-                Delay Amount:
-                16 ms when going to double-speed.
-                32 ms when going to single-speed.
-                Also, bits 4 and 5 of 0xFF00 should read as set (1), while the switch is in process.
-                 */
-
-                // Speed change requested.
-                if (($parentObj->memory[0xFF4D] & 0x01) == 0x01) {
-                    //Go back to single speed mode.
-                    if (($parentObj->memory[0xFF4D] & 0x80) == 0x80) {
-                        // cout("Going into single clock speed mode.", 0);
-                        $parentObj->multiplier = 1; //TODO: Move this into the delay done code.
-                        $parentObj->memory[0xFF4D] &= 0x7F; //Clear the double speed mode flag.
-                    //Go to double speed mode.
-                    } else {
-                        // cout("Going into double clock speed mode.", 0);
-                        $parentObj->multiplier = 2; //TODO: Move this into the delay done code.
-                        $parentObj->memory[0xFF4D] |= 0x80; //Set the double speed mode flag.
-                    }
-                    $parentObj->memory[0xFF4D] &= 0xFE; //Reset the request bit.
-                }
-            }
-        };
-        //LD DE, nn
-        //#0x11:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->registerD = $parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //LD (DE), A
-        //#0x12:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite(($parentObj->registerD << 8) + $parentObj->registerE, $parentObj->registerA);
-        };
-        //INC DE
-        //#0x13:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = ((($parentObj->registerD << 8) + $parentObj->registerE) + 1);
-            $parentObj->registerD = (($temp_var >> 8) & 0xFF);
-            $parentObj->registerE = ($temp_var & 0xFF);
-        };
-        //INC D
-        //#0x14:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = (($parentObj->registerD + 1) & 0xFF);
-            $parentObj->FZero = ($parentObj->registerD == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerD & 0xF) == 0);
-            $parentObj->FSubtract = false;
-        };
-        //DEC D
-        //#0x15:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->unsbtub($parentObj->registerD - 1);
-            $parentObj->FZero = ($parentObj->registerD == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerD & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-        };
-        //LD D, n
-        //#0x16:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RLA
-        //#0x17:
-        $this->functionsArray[] = function ($parentObj) {
-            $carry_flag = ($parentObj->FCarry) ? 1 : 0;
-            $parentObj->FCarry = (($parentObj->registerA & 0x80) == 0x80);
-            $parentObj->registerA = (($parentObj->registerA << 1) & 0xFF) | $carry_flag;
-            $parentObj->FZero = $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //JR n
-        //#0x18:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-        };
-        //ADD HL, DE
-        //#0x19:
-        $this->functionsArray[] = function ($parentObj) {
-            $n2 = ($parentObj->registerD << 8) + $parentObj->registerE;
-            $dirtySum = $parentObj->registersHL + $n2;
-            $parentObj->FHalfCarry = (($parentObj->registersHL & 0xFFF) + ($n2 & 0xFFF) > 0xFFF);
-            $parentObj->FCarry = ($dirtySum > 0xFFFF);
-            $parentObj->registersHL = ($dirtySum & 0xFFFF);
-            $parentObj->FSubtract = false;
-        };
-        //LD A, (DE)
-        //#0x1A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryRead(($parentObj->registerD << 8) + $parentObj->registerE);
-        };
-        //DEC DE
-        //#0x1B:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->unswtuw((($parentObj->registerD << 8) + $parentObj->registerE) - 1);
-            $parentObj->registerD = ($temp_var >> 8);
-            $parentObj->registerE = ($temp_var & 0xFF);
-        };
-        //INC E
-        //#0x1C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = (($parentObj->registerE + 1) & 0xFF);
-            $parentObj->FZero = ($parentObj->registerE == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerE & 0xF) == 0);
-            $parentObj->FSubtract = false;
-        };
-        //DEC E
-        //#0x1D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->unsbtub($parentObj->registerE - 1);
-            $parentObj->FZero = ($parentObj->registerE == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerE & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-        };
-        //LD E, n
-        //#0x1E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RRA
-        //#0x1F:
-        $this->functionsArray[] = function ($parentObj) {
-            $carry_flag = ($parentObj->FCarry) ? 0x80 : 0;
-            $parentObj->FCarry = (($parentObj->registerA & 1) == 1);
-            $parentObj->registerA = ($parentObj->registerA >> 1) + $carry_flag;
-            $parentObj->FZero = $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //JR cc, n
-        //#0x20:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FZero) {
-                $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            }
-        };
-        //LD HL, nn
-        //#0x21:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //LDI (HL), A
-        //#0x22:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerA);
-            $parentObj->registersHL = (($parentObj->registersHL + 1) & 0xFFFF);
-        };
-        //INC HL
-        //#0x23:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = (($parentObj->registersHL + 1) & 0xFFFF);
-        };
-        //INC H
-        //#0x24:
-        $this->functionsArray[] = function ($parentObj) {
-            $H = ((($parentObj->registersHL >> 8) + 1) & 0xFF);
-            $parentObj->FZero = ($H == 0);
-            $parentObj->FHalfCarry = (($H & 0xF) == 0);
-            $parentObj->FSubtract = false;
-            $parentObj->registersHL = ($H << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //DEC H
-        //#0x25:
-        $this->functionsArray[] = function ($parentObj) {
-            $H = $parentObj->unsbtub(($parentObj->registersHL >> 8) - 1);
-            $parentObj->FZero = ($H == 0);
-            $parentObj->FHalfCarry = (($H & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-            $parentObj->registersHL = ($H << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, n
-        //#0x26:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter) << 8) + ($parentObj->registersHL & 0xFF);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //DAA
-        //#0x27:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->registerA;
-            if ($parentObj->FCarry) {
-                $temp_var |= 0x100;
-            }
-            if ($parentObj->FHalfCarry) {
-                $temp_var |= 0x200;
-            }
-            if ($parentObj->FSubtract) {
-                $temp_var |= 0x400;
-            }
-            $parentObj->registerA = ($temp_var = $parentObj->DAATable[$temp_var]) >> 8;
-            $parentObj->FZero = (($temp_var & 0x80) == 0x80);
-            $parentObj->FSubtract = (($temp_var & 0x40) == 0x40);
-            $parentObj->FHalfCarry = (($temp_var & 0x20) == 0x20);
-            $parentObj->FCarry = (($temp_var & 0x10) == 0x10);
-        };
-        //JR cc, n
-        //#0x28:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FZero) {
-                $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            }
-        };
-        //ADD HL, HL
-        //#0x29:
-        $this->functionsArray[] = function ($parentObj) {;
-            $parentObj->FHalfCarry = (($parentObj->registersHL & 0xFFF) > 0x7FF);
-            $parentObj->FCarry = ($parentObj->registersHL > 0x7FFF);
-            $parentObj->registersHL = ((2 * $parentObj->registersHL) & 0xFFFF);
-            $parentObj->FSubtract = false;
-        };
-        //LDI A, (HL)
-        //#0x2A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->registersHL = (($parentObj->registersHL + 1) & 0xFFFF);
-        };
-        //DEC HL
-        //#0x2B:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = $parentObj->unswtuw($parentObj->registersHL - 1);
-        };
-        //INC L
-        //#0x2C:
-        $this->functionsArray[] = function ($parentObj) {
-            $L = (($parentObj->registersHL + 1) & 0xFF);
-            $parentObj->FZero = ($L == 0);
-            $parentObj->FHalfCarry = (($L & 0xF) == 0);
-            $parentObj->FSubtract = false;
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $L;
-        };
-        //DEC L
-        //#0x2D:
-        $this->functionsArray[] = function ($parentObj) {
-            $L = $parentObj->unsbtub(($parentObj->registersHL & 0xFF) - 1);
-            $parentObj->FZero = ($L == 0);
-            $parentObj->FHalfCarry = (($L & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $L;
-        };
-        //LD L, n
-        //#0x2E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //CPL
-        //#0x2F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= 0xFF;
-            $parentObj->FSubtract = $parentObj->FHalfCarry = true;
-        };
-        //JR cc, n
-        //#0x30:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FCarry) {
-                $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            }
-        };
-        //LD SP, nn
-        //#0x31:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //LDD (HL), A
-        //#0x32:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerA);
-            $parentObj->registersHL = $parentObj->unswtuw($parentObj->registersHL - 1);
-        };
-        //INC SP
-        //#0x33:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = ($parentObj->stackPointer + 1) & 0xFFFF;
-        };
-        //INC (HL)
-        //#0x34:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = (($parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL) + 1) & 0xFF);
-            $parentObj->FZero = ($temp_var == 0);
-            $parentObj->FHalfCarry = (($temp_var & 0xF) == 0);
-            $parentObj->FSubtract = false;
-            $parentObj->memoryWrite($parentObj->registersHL, $temp_var);
-        };
-        //DEC (HL)
-        //#0x35:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->unsbtub($parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL) - 1);
-            $parentObj->FZero = ($temp_var == 0);
-            $parentObj->FHalfCarry = (($temp_var & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-            $parentObj->memoryWrite($parentObj->registersHL, $temp_var);
-        };
-        //LD (HL), n
-        //#0x36:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter));
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //SCF
-        //#0x37:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->FCarry = true;
-            $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //JR cc, n
-        //#0x38:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FCarry) {
-                $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter + $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter)) + 1);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            }
-        };
-        //ADD HL, SP
-        //#0x39:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registersHL + $parentObj->stackPointer;
-            $parentObj->FHalfCarry = (($parentObj->registersHL & 0xFFF) + ($parentObj->stackPointer & 0xFFF) > 0xFFF);
-            $parentObj->FCarry = ($dirtySum > 0xFFFF);
-            $parentObj->registersHL = ($dirtySum & 0xFFFF);
-            $parentObj->FSubtract = false;
-        };
-        // LDD A, (HL)
-        //#0x3A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->registersHL = $parentObj->unswtuw($parentObj->registersHL - 1);
-        };
-        //DEC SP
-        //#0x3B:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-        };
-        //INC A
-        //#0x3C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = (($parentObj->registerA + 1) & 0xFF);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) == 0);
-            $parentObj->FSubtract = false;
-        };
-        //DEC A
-        //#0x3D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->unsbtub($parentObj->registerA - 1);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) == 0xF);
-            $parentObj->FSubtract = true;
-        };
-        //LD A, n
-        //#0x3E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //CCF
-        //#0x3F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->FCarry = !$parentObj->FCarry;
-            $parentObj->FSubtract = $parentObj->FHalfCarry = false;
-        };
-        //LD B, B
-        //#0x40:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD B, C
-        //#0x41:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->registerC;
-        };
-        //LD B, D
-        //#0x42:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->registerD;
-        };
-        //LD B, E
-        //#0x43:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->registerE;
-        };
-        //LD B, H
-        //#0x44:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = ($parentObj->registersHL >> 8);
-        };
-        //LD B, L
-        //#0x45:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = ($parentObj->registersHL & 0xFF);
-        };
-        //LD B, (HL)
-        //#0x46:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD B, A
-        //#0x47:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerB = $parentObj->registerA;
-        };
-        //LD C, B
-        //#0x48:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->registerB;
-        };
-        //LD C, C
-        //#0x49:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD C, D
-        //#0x4A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->registerD;
-        };
-        //LD C, E
-        //#0x4B:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->registerE;
-        };
-        //LD C, H
-        //#0x4C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = ($parentObj->registersHL >> 8);
-        };
-        //LD C, L
-        //#0x4D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = ($parentObj->registersHL & 0xFF);
-        };
-        //LD C, (HL)
-        //#0x4E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD C, A
-        //#0x4F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->registerA;
-        };
-        //LD D, B
-        //#0x50:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->registerB;
-        };
-        //LD D, C
-        //#0x51:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->registerC;
-        };
-        //LD D, D
-        //#0x52:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD D, E
-        //#0x53:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->registerE;
-        };
-        //LD D, H
-        //#0x54:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = ($parentObj->registersHL >> 8);
-        };
-        //LD D, L
-        //#0x55:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = ($parentObj->registersHL & 0xFF);
-        };
-        //LD D, (HL)
-        //#0x56:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD D, A
-        //#0x57:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerD = $parentObj->registerA;
-        };
-        //LD E, B
-        //#0x58:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->registerB;
-        };
-        //LD E, C
-        //#0x59:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->registerC;
-        };
-        //LD E, D
-        //#0x5A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->registerD;
-        };
-        //LD E, E
-        //#0x5B:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD E, H
-        //#0x5C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = ($parentObj->registersHL >> 8);
-        };
-        //LD E, L
-        //#0x5D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = ($parentObj->registersHL & 0xFF);
-        };
-        //LD E, (HL)
-        //#0x5E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD E, A
-        //#0x5F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->registerA;
-        };
-        //LD H, B
-        //#0x60:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registerB << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, C
-        //#0x61:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registerC << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, D
-        //#0x62:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registerD << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, E
-        //#0x63:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registerE << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, H
-        //#0x64:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD H, L
-        //#0x65:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = (($parentObj->registersHL & 0xFF) << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, (HL)
-        //#0x66:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL) << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD H, A
-        //#0x67:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registerA << 8) + ($parentObj->registersHL & 0xFF);
-        };
-        //LD L, B
-        //#0x68:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->registerB;
-        };
-        //LD L, C
-        //#0x69:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->registerC;
-        };
-        //LD L, D
-        //#0x6A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->registerD;
-        };
-        //LD L, E
-        //#0x6B:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->registerE;
-        };
-        //LD L, H
-        //#0x6C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + ($parentObj->registersHL >> 8);
-        };
-        //LD L, L
-        //#0x6D:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do nothing...
-        };
-        //LD L, (HL)
-        //#0x6E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD L, A
-        //#0x6F:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->registersHL & 0xFF00) + $parentObj->registerA;
-        };
-        //LD (HL), B
-        //#0x70:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerB);
-        };
-        //LD (HL), C
-        //#0x71:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerC);
-        };
-        //LD (HL), D
-        //#0x72:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerD);
-        };
-        //LD (HL), E
-        //#0x73:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerE);
-        };
-        //LD (HL), H
-        //#0x74:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, ($parentObj->registersHL >> 8));
-        };
-        //LD (HL), L
-        //#0x75:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, ($parentObj->registersHL & 0xFF));
-        };
-        //HALT
-        //#0x76:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->untilEnable == 1) {
-                /*VBA-M says this fixes Torpedo Range (Seems to work):
-                Involves an edge case where an EI is placed right before a HALT.
-                EI in this case actually is immediate, so we adjust (Hacky?).*/
-                $parentObj->programCounter = $parentObj->nswtuw($parentObj->programCounter - 1);
-            } else {
-                if (!$parentObj->halt && !$parentObj->IME && !$parentObj->cGBC && !$parentObj->usedBootROM && ($parentObj->memory[0xFF0F] & $parentObj->memory[0xFFFF] & 0x1F) > 0) {
-                    $parentObj->skipPCIncrement = true;
-                }
-                $parentObj->halt = true;
-                while ($parentObj->halt && ($parentObj->stopEmulator & 1) == 0) {
-                    /*We're hijacking the main interpreter loop to do this dirty business
-                    in order to not slow down the main interpreter loop code with halt state handling.*/
-                    $bitShift = 0;
-                    $testbit = 1;
-                    $interrupts = $parentObj->memory[0xFFFF] & $parentObj->memory[0xFF0F];
-                    while ($bitShift < 5) {
-                        //Check to see if an interrupt is enabled AND requested.
-                        if (($testbit & $interrupts) == $testbit) {
-                            $parentObj->halt = false; //Get out of halt state if in halt state.
-                            return; //Let the main interrupt handler compute the interrupt.
-                        }
-                        $testbit = 1 << ++$bitShift;
-                    }
-                    $parentObj->CPUTicks = 1; //1 machine cycle under HALT...
-                    //Timing:
-                    $parentObj->updateCore();
-                }
-
-                //Throw an error on purpose to exit out of the loop.
-                throw new \Exception('HALT_OVERRUN');
-            }
-        };
-        //LD (HL), A
-        //#0x77:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite($parentObj->registersHL, $parentObj->registerA);
-        };
-        //LD A, B
-        //#0x78:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->registerB;
-        };
-        //LD A, C
-        //#0x79:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->registerC;
-        };
-        //LD A, D
-        //#0x7A:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->registerD;
-        };
-        //LD A, E
-        //#0x7B:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->registerE;
-        };
-        //LD A, H
-        //#0x7C:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = ($parentObj->registersHL >> 8);
-        };
-        //LD A, L
-        //#0x7D:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = ($parentObj->registersHL & 0xFF);
-        };
-        //LD, A, (HL)
-        //#0x7E:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-        };
-        //LD A, A
-        //#0x7F:
-        $this->functionsArray[] = function ($parentObj) {
-            //Do Nothing...
-        };
-        //ADD A, B
-        //#0x80:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerB;
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, C
-        //#0x81:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerC;
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, D
-        //#0x82:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerD;
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, E
-        //#0x83:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerE;
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, H
-        //#0x84:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + ($parentObj->registersHL >> 8);
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, L
-        //#0x85:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + ($parentObj->registersHL & 0xFF);
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, (HL)
-        //#0x86:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADD A, A
-        //#0x87:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA * 2;
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, B
-        //#0x88:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerB + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($parentObj->registerB & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, C
-        //#0x89:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerC + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($parentObj->registerC & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, D
-        //#0x8A:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerD + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($parentObj->registerD & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, E
-        //#0x8B:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->registerE + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($parentObj->registerE & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, H
-        //#0x8C:
-        $this->functionsArray[] = function ($parentObj) {
-            $tempValue = ($parentObj->registersHL >> 8);
-            $dirtySum = $parentObj->registerA + $tempValue + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($tempValue & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, L
-        //#0x8D:
-        $this->functionsArray[] = function ($parentObj) {
-            $tempValue = ($parentObj->registersHL & 0xFF);
-            $dirtySum = $parentObj->registerA + $tempValue + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($tempValue & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, (HL)
-        //#0x8E:
-        $this->functionsArray[] = function ($parentObj) {
-            $tempValue = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $dirtySum = $parentObj->registerA + $tempValue + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($tempValue & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //ADC A, A
-        //#0x8F:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = ($parentObj->registerA * 2) + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($parentObj->registerA & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-        };
-        //SUB A, B
-        //#0x90:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerB;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($parentObj->registerB & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, C
-        //#0x91:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerC;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($parentObj->registerC & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, D
-        //#0x92:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerD;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($parentObj->registerD & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, E
-        //#0x93:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerE;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($parentObj->registerE & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, H
-        //#0x94:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->registersHL >> 8;
-            $dirtySum = $parentObj->registerA - $temp_var;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($temp_var & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, L
-        //#0x95:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - ($parentObj->registersHL & 0xFF);
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($parentObj->registersHL & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, (HL)
-        //#0x96:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $dirtySum = $parentObj->registerA - $temp_var;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($temp_var & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SUB A, A
-        //#0x97:
-        $this->functionsArray[] = function ($parentObj) {
-            //number - same number == 0
-            $parentObj->registerA = 0;
-            $parentObj->FHalfCarry = $parentObj->FCarry = false;
-            $parentObj->FZero = $parentObj->FSubtract = true;
-        };
-        //SBC A, B
-        //#0x98:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerB - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($parentObj->registerB & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, C
-        //#0x99:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerC - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($parentObj->registerC & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, D
-        //#0x9A:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerD - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($parentObj->registerD & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, E
-        //#0x9B:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerE - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($parentObj->registerE & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, H
-        //#0x9C:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->registersHL >> 8;
-            $dirtySum = $parentObj->registerA - $temp_var - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($temp_var & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, L
-        //#0x9D:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - ($parentObj->registersHL & 0xFF) - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($parentObj->registersHL & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, (HL)
-        //#0x9E:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $dirtySum = $parentObj->registerA - $temp_var - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($temp_var & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //SBC A, A
-        //#0x9F:
-        $this->functionsArray[] = function ($parentObj) {
-            //Optimized SBC A:
-            if ($parentObj->FCarry) {
-                $parentObj->FZero = false;
-                $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = true;
-                $parentObj->registerA = 0xFF;
-            } else {
-                $parentObj->FHalfCarry = $parentObj->FCarry = false;
-                $parentObj->FSubtract = $parentObj->FZero = true;
-                $parentObj->registerA = 0;
-            }
-        };
-        //AND B
-        //#0xA0:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->registerB;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND C
-        //#0xA1:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->registerC;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND D
-        //#0xA2:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->registerD;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND E
-        //#0xA3:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->registerE;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND H
-        //#0xA4:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= ($parentObj->registersHL >> 8);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND L
-        //#0xA5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= ($parentObj->registersHL & 0xFF);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND (HL)
-        //#0xA6:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //AND A
-        //#0xA7:
-        $this->functionsArray[] = function ($parentObj) {
-            //number & same number = same number
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //XOR B
-        //#0xA8:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->registerB;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR C
-        //#0xA9:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->registerC;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR D
-        //#0xAA:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->registerD;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR E
-        //#0xAB:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->registerE;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR H
-        //#0xAC:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= ($parentObj->registersHL >> 8);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR L
-        //#0xAD:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= ($parentObj->registersHL & 0xFF);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR (HL)
-        //#0xAE:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //XOR A
-        //#0xAF:
-        $this->functionsArray[] = function ($parentObj) {
-            //number ^ same number == 0
-            $parentObj->registerA = 0;
-            $parentObj->FZero = true;
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //OR B
-        //#0xB0:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->registerB;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR C
-        //#0xB1:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->registerC;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR D
-        //#0xB2:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->registerD;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR E
-        //#0xB3:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->registerE;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR H
-        //#0xB4:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= ($parentObj->registersHL >> 8);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR L
-        //#0xB5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= ($parentObj->registersHL & 0xFF);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR (HL)
-        //#0xB6:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //OR A
-        //#0xB7:
-        $this->functionsArray[] = function ($parentObj) {
-            //number | same number == same number
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //CP B
-        //#0xB8:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerB;
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP C
-        //#0xB9:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerC;
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP D
-        //#0xBA:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerD;
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP E
-        //#0xBB:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->registerE;
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP H
-        //#0xBC:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - ($parentObj->registersHL >> 8);
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP L
-        //#0xBD:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - ($parentObj->registersHL & 0xFF);
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP (HL)
-        //#0xBE:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->memoryReader[$parentObj->registersHL]($parentObj, $parentObj->registersHL);
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->FSubtract = true;
-        };
-        //CP A
-        //#0xBF:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->FHalfCarry = $parentObj->FCarry = false;
-            $parentObj->FZero = $parentObj->FSubtract = true;
-        };
-        //RET !FZ
-        //#0xC0:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FZero) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-                $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-                $parentObj->CPUTicks += 3;
-            }
-        };
-        //POP BC
-        //#0xC1:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerC = $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->registerB = $parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-        };
-        //JP !FZ, nn
-        //#0xC2:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FZero) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //JP nn
-        //#0xC3:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-        };
-        //CALL !FZ, nn
-        //#0xC4:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FZero) {
-                $temp_pc = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-                $parentObj->programCounter = $temp_pc;
-                $parentObj->CPUTicks += 3;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //PUSH BC
-        //#0xC5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registerB);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registerC);
-        };
-        //ADD, n
-        //#0xC6:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->FHalfCarry = ($dirtySum & 0xF) < ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RST 0
-        //#0xC7:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0;
-        };
-        //RET FZ
-        //#0xC8:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FZero) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-                $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-                $parentObj->CPUTicks += 3;
-            }
-        };
-        //RET
-        //#0xC9:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-        };
-        //JP FZ, nn
-        //#0xCA:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FZero) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //Secondary OP Code Set:
-        //#0xCB:
-        $this->functionsArray[] = function ($parentObj) {
-            $opcode = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            //Increment the program counter to the next instruction:
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            //Get how many CPU cycles the current 0xCBXX op code counts for:
-            $parentObj->CPUTicks = $parentObj->SecondaryTICKTable[$opcode];
-            //Execute secondary OP codes for the 0xCB OP code call.
-            $parentObj->CBOPCODE[$opcode]($parentObj);
-        };
-        //CALL FZ, nn
-        //#0xCC:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FZero) {
-                $temp_pc = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-                $parentObj->programCounter = $temp_pc;
-                $parentObj->CPUTicks += 3;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //CALL nn
-        //#0xCD:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_pc = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = $temp_pc;
-        };
-        //ADC A, n
-        //#0xCE:
-        $this->functionsArray[] = function ($parentObj) {
-            $tempValue = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $dirtySum = $parentObj->registerA + $tempValue + (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) + ($tempValue & 0xF) + (($parentObj->FCarry) ? 1 : 0) > 0xF);
-            $parentObj->FCarry = ($dirtySum > 0xFF);
-            $parentObj->registerA = $dirtySum & 0xFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = false;
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //RST 0x8
-        //#0xCF:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x8;
-        };
-        //RET !FC
-        //#0xD0:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FCarry) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-                $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-                $parentObj->CPUTicks += 3;
-            }
-        };
-        //POP DE
-        //#0xD1:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerE = $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->registerD = $parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-        };
-        //JP !FC, nn
-        //#0xD2:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FCarry) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //0xD3 - Illegal
-        //#0xD3:
-        $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xD3 called, pausing emulation.", 2);
-            // pause();
-        };
-        //CALL !FC, nn
-        //#0xD4:
-        $this->functionsArray[] = function ($parentObj) {
-            if (!$parentObj->FCarry) {
-                $temp_pc = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-                $parentObj->programCounter = $temp_pc;
-                $parentObj->CPUTicks += 3;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //PUSH DE
-        //#0xD5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registerD);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registerE);
-        };
-        //SUB A, n
-        //#0xD6:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $dirtySum = $parentObj->registerA - $temp_var;
-            $parentObj->FHalfCarry = ($parentObj->registerA & 0xF) < ($temp_var & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //RST 0x10
-        //#0xD7:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x10;
-        };
-        //RET FC
-        //#0xD8:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FCarry) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-                $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-                $parentObj->CPUTicks += 3;
-            }
-        };
-        //RETI
-        //#0xD9:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-            //$parentObj->IME = true;
-            $parentObj->untilEnable = 2;
-        };
-        //JP FC, nn
-        //#0xDA:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FCarry) {
-                $parentObj->programCounter = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                ++$parentObj->CPUTicks;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //0xDB - Illegal
-        //#0xDB:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xDB called, pausing emulation.';
-            exit();
-        };
-        //CALL FC, nn
-        //#0xDC:
-        $this->functionsArray[] = function ($parentObj) {
-            if ($parentObj->FCarry) {
-                $temp_pc = ($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-                $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-                $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-                $parentObj->programCounter = $temp_pc;
-                $parentObj->CPUTicks += 3;
-            } else {
-                $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-            }
-        };
-        //0xDD - Illegal
-        //#0xDD:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xDD called, pausing emulation.';
-            exit();
-        };
-        //SBC A, n
-        //#0xDE:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $dirtySum = $parentObj->registerA - $temp_var - (($parentObj->FCarry) ? 1 : 0);
-            $parentObj->FHalfCarry = (($parentObj->registerA & 0xF) - ($temp_var & 0xF) - (($parentObj->FCarry) ? 1 : 0) < 0);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->registerA = $parentObj->unsbtub($dirtySum);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FSubtract = true;
-        };
-        //RST 0x18
-        //#0xDF:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x18;
-        };
-        //LDH (n), A
-        //#0xE0:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite(0xFF00 + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter), $parentObj->registerA);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //POP HL
-        //#0xE1:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registersHL = ($parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-        };
-        //LD (C), A
-        //#0xE2:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite(0xFF00 + $parentObj->registerC, $parentObj->registerA);
-        };
-        //0xE3 - Illegal
-        //#0xE3:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xE3 called, pausing emulation.';
-            exit();
-        };
-        //0xE4 - Illegal
-        //#0xE4:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xE4 called, pausing emulation.';
-            exit();
-        };
-        //PUSH HL
-        //#0xE5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registersHL >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registersHL & 0xFF);
-        };
-        //AND n
-        //#0xE6:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA &= $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->FHalfCarry = true;
-            $parentObj->FSubtract = $parentObj->FCarry = false;
-        };
-        //RST 0x20
-        //#0xE7:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x20;
-        };
-        //ADD SP, n
-        //#0xE8:
-        $this->functionsArray[] = function ($parentObj) {
-            $signedByte = $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter));
-            $temp_value = $parentObj->nswtuw($parentObj->stackPointer + $signedByte);
-            $parentObj->FCarry = ((($parentObj->stackPointer ^ $signedByte ^ $temp_value) & 0x100) == 0x100);
-            $parentObj->FHalfCarry = ((($parentObj->stackPointer ^ $signedByte ^ $temp_value) & 0x10) == 0x10);
-            $parentObj->stackPointer = $temp_value;
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FZero = $parentObj->FSubtract = false;
-        };
-        //JP, (HL)
-        //#0xE9:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->programCounter = $parentObj->registersHL;
-        };
-        //LD n, A
-        //#0xEA:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->memoryWrite(($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter), $parentObj->registerA);
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //0xEB - Illegal
-        //#0xEB:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xEB called, pausing emulation.';
-            exit();
-        };
-        //0xEC - Illegal
-        //#0xEC:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xEC called, pausing emulation.';
-            exit();
-        };
-        //0xED - Illegal
-        //#0xED:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xED called, pausing emulation.';
-            exit();
-        };
-        //XOR n
-        //#0xEE:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA ^= $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FSubtract = $parentObj->FHalfCarry = $parentObj->FCarry = false;
-        };
-        //RST 0x28
-        //#0xEF:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x28;
-        };
-        //LDH A, (n)
-        //#0xF0:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryRead(0xFF00 + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter));
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-        };
-        //POP AF
-        //#0xF1:
-        $this->functionsArray[] = function ($parentObj) {
-            $temp_var = $parentObj->memoryReader[$parentObj->stackPointer]($parentObj, $parentObj->stackPointer);
-            $parentObj->FZero = (($temp_var & 0x80) == 0x80);
-            $parentObj->FSubtract = (($temp_var & 0x40) == 0x40);
-            $parentObj->FHalfCarry = (($temp_var & 0x20) == 0x20);
-            $parentObj->FCarry = (($temp_var & 0x10) == 0x10);
-            $parentObj->registerA = $parentObj->memoryRead(($parentObj->stackPointer + 1) & 0xFFFF);
-            $parentObj->stackPointer = ($parentObj->stackPointer + 2) & 0xFFFF;
-        };
-        //LD A, (C)
-        //#0xF2:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryRead(0xFF00 + $parentObj->registerC);
-        };
-        //DI
-        //#0xF3:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->IME = false;
-            $parentObj->untilEnable = 0;
-        };
-        //0xF4 - Illegal
-        //#0xF4:
-        $this->functionsArray[] = function ($parentObj) {
-            // @TODO
-            // cout("Illegal op code 0xF4 called, pausing emulation.", 2);
-            // pause();
-        };
-        //PUSH AF
-        //#0xF5:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->registerA);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, (($parentObj->FZero) ? 0x80 : 0) + (($parentObj->FSubtract) ? 0x40 : 0) + (($parentObj->FHalfCarry) ? 0x20 : 0) + (($parentObj->FCarry) ? 0x10 : 0));
-        };
-        //OR n
-        //#0xF6:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA |= $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->FZero = ($parentObj->registerA == 0);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FSubtract = $parentObj->FCarry = $parentObj->FHalfCarry = false;
-        };
-        //RST 0x30
-        //#0xF7:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x30;
-        };
-        //LDHL SP, n
-        //#0xF8:
-        $this->functionsArray[] = function ($parentObj) {
-            $signedByte = $parentObj->usbtsb($parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter));
-            $parentObj->registersHL = $parentObj->nswtuw($parentObj->stackPointer + $signedByte);
-            $parentObj->FCarry = ((($parentObj->stackPointer ^ $signedByte ^ $parentObj->registersHL) & 0x100) == 0x100);
-            $parentObj->FHalfCarry = ((($parentObj->stackPointer ^ $signedByte ^ $parentObj->registersHL) & 0x10) == 0x10);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FZero = $parentObj->FSubtract = false;
-        };
-        //LD SP, HL
-        //#0xF9:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->registersHL;
-        };
-        //LD A, (nn)
-        //#0xFA:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->registerA = $parentObj->memoryRead(($parentObj->memoryRead(($parentObj->programCounter + 1) & 0xFFFF) << 8) + $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter));
-            $parentObj->programCounter = ($parentObj->programCounter + 2) & 0xFFFF;
-        };
-        //EI
-        //#0xFB:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->untilEnable = 2;
-        };
-        //0xFC - Illegal
-        //#0xFC:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xFC called, pausing emulation.';
-            exit();
-        };
-        //0xFD - Illegal
-        //#0xFD:
-        $this->functionsArray[] = function ($parentObj) {
-            echo 'Illegal op code 0xFD called, pausing emulation.';
-            exit();
-        };
-        //CP n
-        //#0xFE:
-        $this->functionsArray[] = function ($parentObj) {
-            $dirtySum = $parentObj->registerA - $parentObj->memoryReader[$parentObj->programCounter]($parentObj, $parentObj->programCounter);
-            $parentObj->FHalfCarry = ($parentObj->unsbtub($dirtySum) & 0xF) > ($parentObj->registerA & 0xF);
-            $parentObj->FCarry = ($dirtySum < 0);
-            $parentObj->FZero = ($dirtySum == 0);
-            $parentObj->programCounter = ($parentObj->programCounter + 1) & 0xFFFF;
-            $parentObj->FSubtract = true;
-        };
-        //RST 0x38
-        //#0xFF:
-        $this->functionsArray[] = function ($parentObj) {
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter >> 8);
-            $parentObj->stackPointer = $parentObj->unswtuw($parentObj->stackPointer - 1);
-            $parentObj->memoryWrite($parentObj->stackPointer, $parentObj->programCounter & 0xFF);
-            $parentObj->programCounter = 0x38;
-        };
+        $function = 'opcode'.$address;
+        return Opcode::$function($core);
     }
 
-    public function get()
+    /**
+     * Opcode #0x00.
+     *
+     * NOP
+     *
+     * @param Core $core
+     */
+    private static function opcode0(Core $core)
     {
-        return $this->functionsArray;
+        // Do Nothing...
+    }
+
+    /**
+     * Opcode #0x01.
+     *
+     * LD BC, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode1(Core $core)
+    {
+        $core->registerC = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->registerB = $core->memoryRead(($core->programCounter + 1) & 0xFFFF);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x02.
+     *
+     * LD (BC), A
+     *
+     * @param Core $core
+     */
+    private static function opcode2(Core $core)
+    {
+        $core->memoryWrite(($core->registerB << 8) + $core->registerC, $core->registerA);
+    }
+
+    /**
+     * Opcode #0x03.
+     *
+     * INC BC
+     *
+     * @param Core $core
+     */
+    private static function opcode3(Core $core)
+    {
+        $temp_var = ((($core->registerB << 8) + $core->registerC) + 1);
+        $core->registerB = (($temp_var >> 8) & 0xFF);
+        $core->registerC = ($temp_var & 0xFF);
+    }
+
+    /**
+     * Opcode #0x04.
+     *
+     * INC B
+     *
+     * @param Core $core
+     */
+    private static function opcode4(Core $core)
+    {
+        $core->registerB = (($core->registerB + 1) & 0xFF);
+        $core->FZero = ($core->registerB == 0);
+        $core->FHalfCarry = (($core->registerB & 0xF) == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x05.
+     *
+     * DEC B
+     *
+     * @param Core $core
+     */
+    private static function opcode5(Core $core)
+    {
+        $core->registerB = $core->unsbtub($core->registerB - 1);
+        $core->FZero = ($core->registerB == 0);
+        $core->FHalfCarry = (($core->registerB & 0xF) == 0xF);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x06.
+     *
+     * LD B, n
+     *
+     * @param Core $core
+     */
+    private static function opcode6(Core $core)
+    {
+        $core->registerB = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x07.
+     *
+     * RCLA
+     *
+     * @param Core $core
+     */
+    private static function opcode7(Core $core)
+    {
+        $core->FCarry = (($core->registerA & 0x80) == 0x80);
+        $core->registerA = (($core->registerA << 1) & 0xFF) | ($core->registerA >> 7);
+        $core->FZero = $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x08
+     *
+     * LD (nn), SP
+     *
+     * @param Core $core
+     */
+    private static function opcode8(Core $core)
+    {
+        $temp_var = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->memoryWrite($temp_var, $core->stackPointer & 0xFF);
+        $core->memoryWrite(($temp_var + 1) & 0xFFFF, $core->stackPointer >> 8);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x09.
+     *
+     * ADD HL, BC
+     *
+     * @param Core $core
+     */
+    private static function opcode9(Core $core)
+    {
+        $n2 = ($core->registerB << 8) + $core->registerC;
+        $dirtySum = $core->registersHL + $n2;
+        $core->FHalfCarry = (($core->registersHL & 0xFFF) + ($n2 & 0xFFF) > 0xFFF);
+        $core->FCarry = ($dirtySum > 0xFFFF);
+        $core->registersHL = ($dirtySum & 0xFFFF);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x0A.
+     *
+     * LD A, (BC)
+     *
+     * @param Core $core
+     */
+    private static function opcode10(Core $core)
+    {
+        $core->registerA = $core->memoryRead(($core->registerB << 8) + $core->registerC);
+    }
+
+    /**
+     * Opcode #0x0B.
+     *
+     * DEC BC
+     *
+     * @param Core $core
+     */
+    private static function opcode11(Core $core)
+    {
+        $temp_var = $core->unswtuw((($core->registerB << 8) + $core->registerC) - 1);
+        $core->registerB = ($temp_var >> 8);
+        $core->registerC = ($temp_var & 0xFF);
+    }
+
+    /**
+     * Opcode #0x0C
+     *
+     * INC C
+     *
+     * @param Core $core
+     */
+    private static function opcode12(Core $core)
+    {
+        $core->registerC = (($core->registerC + 1) & 0xFF);
+        $core->FZero = ($core->registerC == 0);
+        $core->FHalfCarry = (($core->registerC & 0xF) == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x0D.
+     *
+     * DEC C
+     *
+     * @param Core $core
+     */
+    private static function opcode13(Core $core)
+    {
+        $core->registerC = $core->unsbtub($core->registerC - 1);
+        $core->FZero = ($core->registerC == 0);
+        $core->FHalfCarry = (($core->registerC & 0xF) == 0xF);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x0E.
+     *
+     * LD C, n
+     *
+     * @param Core $core
+     */
+    private static function opcode14(Core $core)
+    {
+        $core->registerC = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x0F.
+     *
+     * RRCA
+     *
+     * @param Core $core
+     */
+    private static function opcode15(Core $core)
+    {
+        $core->FCarry = (($core->registerA & 1) == 1);
+        $core->registerA = ($core->registerA >> 1) + (($core->registerA & 1) << 7);
+        $core->FZero = $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x10.
+     *
+     * STOP
+     *
+     * @param Core $core
+     */
+    private static function opcode16(Core $core)
+    {
+        if ($core->cGBC) {
+            /*TODO: Emulate the speed switch delay:
+            Delay Amount:
+            16 ms when going to double-speed.
+            32 ms when going to single-speed.
+            Also, bits 4 and 5 of 0xFF00 should read as set (1), while the switch is in process.
+             */
+
+            // Speed change requested.
+            if (($core->memory[0xFF4D] & 0x01) == 0x01) {
+                //Go back to single speed mode.
+                if (($core->memory[0xFF4D] & 0x80) == 0x80) {
+                    // cout("Going into single clock speed mode.", 0);
+                    $core->multiplier = 1; //TODO: Move this into the delay done code.
+                    $core->memory[0xFF4D] &= 0x7F; //Clear the double speed mode flag.
+                    //Go to double speed mode.
+                } else {
+                    // cout("Going into double clock speed mode.", 0);
+                    $core->multiplier = 2; //TODO: Move this into the delay done code.
+                    $core->memory[0xFF4D] |= 0x80; //Set the double speed mode flag.
+                }
+                $core->memory[0xFF4D] &= 0xFE; //Reset the request bit.
+            }
+        }
+    }
+
+    /**
+     * Opcode #0x11.
+     *
+     * LD DE, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode17(Core $core)
+    {
+        $core->registerE = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->registerD = $core->memoryRead(($core->programCounter + 1) & 0xFFFF);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x12.
+     *
+     * LD (DE), A
+     *
+     * @param Core $core
+     */
+    private static function opcode18(Core $core)
+    {
+        $core->memoryWrite(($core->registerD << 8) + $core->registerE, $core->registerA);
+    }
+
+    /**
+     * Opcode #0x13.
+     *
+     * INC DE
+     *
+     * @param Core $core
+     */
+    private static function opcode19(Core $core)
+    {
+        $temp_var = ((($core->registerD << 8) + $core->registerE) + 1);
+        $core->registerD = (($temp_var >> 8) & 0xFF);
+        $core->registerE = ($temp_var & 0xFF);
+    }
+
+    /**
+     * Opcode #0x14.
+     *
+     * INC D
+     *
+     * @param Core $core
+     */
+    private static function opcode20(Core $core)
+    {
+        $core->registerD = (($core->registerD + 1) & 0xFF);
+        $core->FZero = ($core->registerD == 0);
+        $core->FHalfCarry = (($core->registerD & 0xF) == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x15.
+     *
+     * DEC D
+     *
+     * @param Core $core
+     */
+    private static function opcode21(Core $core)
+    {
+        $core->registerD = $core->unsbtub($core->registerD - 1);
+        $core->FZero = ($core->registerD == 0);
+        $core->FHalfCarry = (($core->registerD & 0xF) == 0xF);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x16.
+     *
+     * LD D, n
+     *
+     * @param Core $core
+     */
+    private static function opcode22(Core $core)
+    {
+        $core->registerD = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x17.
+     *
+     * RLA
+     *
+     * @param Core $core
+     */
+    private static function opcode23(Core $core)
+    {
+        $carry_flag = ($core->FCarry) ? 1 : 0;
+        $core->FCarry = (($core->registerA & 0x80) == 0x80);
+        $core->registerA = (($core->registerA << 1) & 0xFF) | $carry_flag;
+        $core->FZero = $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x18.
+     *
+     * JR n
+     *
+     * @param Core $core
+     */
+    private static function opcode24(Core $core)
+    {
+        $core->programCounter = $core->nswtuw($core->programCounter + $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter)) + 1);
+    }
+
+    /**
+     * Opcode #0x19.
+     *
+     * ADD HL, DE
+     *
+     * @param Core $core
+     */
+    private static function opcode25(Core $core)
+    {
+        $n2 = ($core->registerD << 8) + $core->registerE;
+        $dirtySum = $core->registersHL + $n2;
+        $core->FHalfCarry = (($core->registersHL & 0xFFF) + ($n2 & 0xFFF) > 0xFFF);
+        $core->FCarry = ($dirtySum > 0xFFFF);
+        $core->registersHL = ($dirtySum & 0xFFFF);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x1A.
+     *
+     * LD A, (DE)
+     *
+     * @param Core $core
+     */
+    private static function opcode26(Core $core)
+    {
+        $core->registerA = $core->memoryRead(($core->registerD << 8) + $core->registerE);
+    }
+
+    /**
+     * Opcode #0x1B.
+     *
+     * DEC DE
+     *
+     * @param Core $core
+     */
+    private static function opcode27(Core $core)
+    {
+        $temp_var = $core->unswtuw((($core->registerD << 8) + $core->registerE) - 1);
+        $core->registerD = ($temp_var >> 8);
+        $core->registerE = ($temp_var & 0xFF);
+    }
+
+    /**
+     * Opcode #0x1C.
+     *
+     * INC E
+     *
+     * @param Core $core
+     */
+    private static function opcode28(Core $core)
+    {
+        $core->registerE = (($core->registerE + 1) & 0xFF);
+        $core->FZero = ($core->registerE == 0);
+        $core->FHalfCarry = (($core->registerE & 0xF) == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x1D.
+     *
+     * DEC E
+     *
+     * @param Core $core
+     */
+    private static function opcode29(Core $core)
+    {
+        $core->registerE = $core->unsbtub($core->registerE - 1);
+        $core->FZero = ($core->registerE == 0);
+        $core->FHalfCarry = (($core->registerE & 0xF) == 0xF);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x1E.
+     *
+     * LD E, n
+     *
+     * @param Core $core
+     */
+    private static function opcode30(Core $core)
+    {
+        $core->registerE = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x1F.
+     *
+     * RRA
+     *
+     * @param Core $core
+     */
+    private static function opcode31(Core $core)
+    {
+        $carry_flag = ($core->FCarry) ? 0x80 : 0;
+        $core->FCarry = (($core->registerA & 1) == 1);
+        $core->registerA = ($core->registerA >> 1) + $carry_flag;
+        $core->FZero = $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x20.
+     *
+     * JR cc, n
+     *
+     * @param Core $core
+     */
+    private static function opcode32(Core $core)
+    {
+        if (!$core->FZero) {
+            $core->programCounter = $core->nswtuw($core->programCounter + $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter)) + 1);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0x21.
+     *
+     * LD HL, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode33(Core $core)
+    {
+        $core->registersHL = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x22.
+     *
+     * LDI (HL), A
+     *
+     * @param Core $core
+     */
+    private static function opcode34(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerA);
+        $core->registersHL = (($core->registersHL + 1) & 0xFFFF);
+    }
+
+    /**
+     * Opcode #0x23.
+     *
+     * INC HL
+     *
+     * @param Core $core
+     */
+    private static function opcode35(Core $core)
+    {
+        $core->registersHL = (($core->registersHL + 1) & 0xFFFF);
+    }
+
+    /**
+     * Opcode #0x24.
+     *
+     * INC H
+     *
+     * @param Core $core
+     */
+    private static function opcode36(Core $core)
+    {
+        $H = ((($core->registersHL >> 8) + 1) & 0xFF);
+        $core->FZero = ($H == 0);
+        $core->FHalfCarry = (($H & 0xF) == 0);
+        $core->FSubtract = false;
+        $core->registersHL = ($H << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x25.
+     *
+     * DEC H
+     *
+     * @param Core $core
+     */
+    private static function opcode37(Core $core)
+    {
+        $H = $core->unsbtub(($core->registersHL >> 8) - 1);
+        $core->FZero = ($H == 0);
+        $core->FHalfCarry = (($H & 0xF) == 0xF);
+        $core->FSubtract = true;
+        $core->registersHL = ($H << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x26.
+     *
+     * LD H, n
+     *
+     * @param Core $core
+     */
+    private static function opcode38(Core $core)
+    {
+        $core->registersHL = ($core->memoryReader[$core->programCounter]($core, $core->programCounter) << 8) + ($core->registersHL & 0xFF);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x27.
+     *
+     * DAA
+     *
+     * @param Core $core
+     */
+    private static function opcode39(Core $core)
+    {
+        $temp_var = $core->registerA;
+        if ($core->FCarry) {
+            $temp_var |= 0x100;
+        }
+        if ($core->FHalfCarry) {
+            $temp_var |= 0x200;
+        }
+        if ($core->FSubtract) {
+            $temp_var |= 0x400;
+        }
+        $core->registerA = ($temp_var = $core->DAATable[$temp_var]) >> 8;
+        $core->FZero = (($temp_var & 0x80) == 0x80);
+        $core->FSubtract = (($temp_var & 0x40) == 0x40);
+        $core->FHalfCarry = (($temp_var & 0x20) == 0x20);
+        $core->FCarry = (($temp_var & 0x10) == 0x10);
+    }
+
+    /**
+     * Opcode #0x28.
+     *
+     * JR cc, n
+     *
+     * @param Core $core
+     */
+    private static function opcode40(Core $core)
+    {
+        if ($core->FZero) {
+            $core->programCounter = $core->nswtuw($core->programCounter + $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter)) + 1);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0x29.
+     *
+     * ADD HL, HL
+     *
+     * @param Core $core
+     */
+    private static function opcode41(Core $core)
+    {
+        ;
+        $core->FHalfCarry = (($core->registersHL & 0xFFF) > 0x7FF);
+        $core->FCarry = ($core->registersHL > 0x7FFF);
+        $core->registersHL = ((2 * $core->registersHL) & 0xFFFF);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x2A.
+     *
+     * LDI A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode42(Core $core)
+    {
+        $core->registerA = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->registersHL = (($core->registersHL + 1) & 0xFFFF);
+    }
+
+    /**
+     * Opcode #0x2B.
+     *
+     * DEC HL
+     *
+     * @param Core $core
+     */
+    private static function opcode43(Core $core)
+    {
+        $core->registersHL = $core->unswtuw($core->registersHL - 1);
+    }
+
+    /**
+     * Opcode #0x2C.
+     *
+     * INC L
+     *
+     * @param Core $core
+     */
+    private static function opcode44(Core $core)
+    {
+        $L = (($core->registersHL + 1) & 0xFF);
+        $core->FZero = ($L == 0);
+        $core->FHalfCarry = (($L & 0xF) == 0);
+        $core->FSubtract = false;
+        $core->registersHL = ($core->registersHL & 0xFF00) + $L;
+    }
+
+    /**
+     * Opcode #0x2D.
+     *
+     * DEC L
+     *
+     * @param Core $core
+     */
+    private static function opcode45(Core $core)
+    {
+        $L = $core->unsbtub(($core->registersHL & 0xFF) - 1);
+        $core->FZero = ($L == 0);
+        $core->FHalfCarry = (($L & 0xF) == 0xF);
+        $core->FSubtract = true;
+        $core->registersHL = ($core->registersHL & 0xFF00) + $L;
+    }
+
+    /**
+     * Opcode #0x2E.
+     *
+     * LD L, n
+     *
+     * @param Core $core
+     */
+    private static function opcode46(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x2F.
+     *
+     * CPL
+     *
+     * @param Core $core
+     */
+    private static function opcode47(Core $core)
+    {
+        $core->registerA ^= 0xFF;
+        $core->FSubtract = $core->FHalfCarry = true;
+    }
+
+    /**
+     * Opcode #0x30.
+     *
+     * JR cc, n
+     *
+     * @param Core $core
+     */
+    private static function opcode48(Core $core)
+    {
+        if (!$core->FCarry) {
+            $core->programCounter = $core->nswtuw($core->programCounter + $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter)) + 1);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0x31.
+     *
+     * LD SP, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode49(Core $core)
+    {
+        $core->stackPointer = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x32.
+     *
+     * LDD (HL), A
+     *
+     * @param Core $core
+     */
+    private static function opcode50(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerA);
+        $core->registersHL = $core->unswtuw($core->registersHL - 1);
+    }
+
+    /**
+     * Opcode #0x33.
+     *
+     * INC SP
+     *
+     * @param Core $core
+     */
+    private static function opcode51(Core $core)
+    {
+        $core->stackPointer = ($core->stackPointer + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x34.
+     *
+     * INC (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode52(Core $core)
+    {
+        $temp_var = (($core->memoryReader[$core->registersHL]($core, $core->registersHL) + 1) & 0xFF);
+        $core->FZero = ($temp_var == 0);
+        $core->FHalfCarry = (($temp_var & 0xF) == 0);
+        $core->FSubtract = false;
+        $core->memoryWrite($core->registersHL, $temp_var);
+    }
+
+    /**
+     * Opcode #0x35.
+     *
+     * DEC (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode53(Core $core)
+    {
+        $temp_var = $core->unsbtub($core->memoryReader[$core->registersHL]($core, $core->registersHL) - 1);
+        $core->FZero = ($temp_var == 0);
+        $core->FHalfCarry = (($temp_var & 0xF) == 0xF);
+        $core->FSubtract = true;
+        $core->memoryWrite($core->registersHL, $temp_var);
+    }
+
+    /**
+     * Opcode #0x36.
+     *
+     * LD (HL), n
+     *
+     * @param Core $core
+     */
+    private static function opcode54(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->memoryReader[$core->programCounter]($core, $core->programCounter));
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x37.
+     *
+     * SCF
+     *
+     * @param Core $core
+     */
+    private static function opcode55(Core $core)
+    {
+        $core->FCarry = true;
+        $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x38.
+     *
+     * JR cc, n
+     *
+     * @param Core $core
+     */
+    private static function opcode56(Core $core)
+    {
+        if ($core->FCarry) {
+            $core->programCounter = $core->nswtuw($core->programCounter + $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter)) + 1);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0x39.
+     *
+     * ADD HL, SP
+     *
+     * @param Core $core
+     */
+    private static function opcode57(Core $core)
+    {
+        $dirtySum = $core->registersHL + $core->stackPointer;
+        $core->FHalfCarry = (($core->registersHL & 0xFFF) + ($core->stackPointer & 0xFFF) > 0xFFF);
+        $core->FCarry = ($dirtySum > 0xFFFF);
+        $core->registersHL = ($dirtySum & 0xFFFF);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x3A.
+     *
+     *  LDD A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode58(Core $core)
+    {
+        $core->registerA = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->registersHL = $core->unswtuw($core->registersHL - 1);
+    }
+
+    /**
+     * Opcode #0x3B.
+     *
+     * DEC SP
+     *
+     * @param Core $core
+     */
+    private static function opcode59(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+    }
+
+    /**
+     * Opcode #0x3C.
+     *
+     * INC A
+     *
+     * @param Core $core
+     */
+    private static function opcode60(Core $core)
+    {
+        $core->registerA = (($core->registerA + 1) & 0xFF);
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x3D.
+     *
+     * DEC A
+     *
+     * @param Core $core
+     */
+    private static function opcode61(Core $core)
+    {
+        $core->registerA = $core->unsbtub($core->registerA - 1);
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) == 0xF);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x3E.
+     *
+     * LD A, n
+     *
+     * @param Core $core
+     */
+    private static function opcode62(Core $core)
+    {
+        $core->registerA = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0x3F.
+     *
+     * CCF
+     *
+     * @param Core $core
+     */
+    private static function opcode63(Core $core)
+    {
+        $core->FCarry = !$core->FCarry;
+        $core->FSubtract = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0x40.
+     *
+     * LD B, B
+     *
+     * @param Core $core
+     */
+    private static function opcode64(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x41.
+     *
+     * LD B, C
+     *
+     * @param Core $core
+     */
+    private static function opcode65(Core $core)
+    {
+        $core->registerB = $core->registerC;
+    }
+
+    /**
+     * Opcode #0x42.
+     *
+     * LD B, D
+     *
+     * @param Core $core
+     */
+    private static function opcode66(Core $core)
+    {
+        $core->registerB = $core->registerD;
+    }
+
+    /**
+     * Opcode #0x43.
+     *
+     * LD B, E
+     *
+     * @param Core $core
+     */
+    private static function opcode67(Core $core)
+    {
+        $core->registerB = $core->registerE;
+    }
+
+    /**
+     * Opcode #0x44.
+     *
+     * LD B, H
+     *
+     * @param Core $core
+     */
+    private static function opcode68(Core $core)
+    {
+        $core->registerB = ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x45.
+     *
+     * LD B, L
+     *
+     * @param Core $core
+     */
+    private static function opcode69(Core $core)
+    {
+        $core->registerB = ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x46.
+     *
+     * LD B, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode70(Core $core)
+    {
+        $core->registerB = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x47.
+     *
+     * LD B, A
+     *
+     * @param Core $core
+     */
+    private static function opcode71(Core $core)
+    {
+        $core->registerB = $core->registerA;
+    }
+
+    /**
+     * Opcode #0x48.
+     *
+     * LD C, B
+     *
+     * @param Core $core
+     */
+    private static function opcode72(Core $core)
+    {
+        $core->registerC = $core->registerB;
+    }
+
+    /**
+     * Opcode #0x49.
+     *
+     * LD C, C
+     *
+     * @param Core $core
+     */
+    private static function opcode73(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x4A.
+     *
+     * LD C, D
+     *
+     * @param Core $core
+     */
+    private static function opcode74(Core $core)
+    {
+        $core->registerC = $core->registerD;
+    }
+
+    /**
+     * Opcode #0x4B.
+     *
+     * LD C, E
+     *
+     * @param Core $core
+     */
+    private static function opcode75(Core $core)
+    {
+        $core->registerC = $core->registerE;
+    }
+
+    /**
+     * Opcode #0x4C.
+     *
+     * LD C, H
+     *
+     * @param Core $core
+     */
+    private static function opcode76(Core $core)
+    {
+        $core->registerC = ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x4D.
+     *
+     * LD C, L
+     *
+     * @param Core $core
+     */
+    private static function opcode77(Core $core)
+    {
+        $core->registerC = ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x4E.
+     *
+     * LD C, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode78(Core $core)
+    {
+        $core->registerC = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x4F.
+     *
+     * LD C, A
+     *
+     * @param Core $core
+     */
+    private static function opcode79(Core $core)
+    {
+        $core->registerC = $core->registerA;
+    }
+
+    /**
+     * Opcode #0x50.
+     *
+     * LD D, B
+     *
+     * @param Core $core
+     */
+    private static function opcode80(Core $core)
+    {
+        $core->registerD = $core->registerB;
+    }
+
+    /**
+     * Opcode #0x51.
+     *
+     * LD D, C
+     *
+     * @param Core $core
+     */
+    private static function opcode81(Core $core)
+    {
+        $core->registerD = $core->registerC;
+    }
+
+    /**
+     * Opcode #0x52.
+     *
+     * LD D, D
+     *
+     * @param Core $core
+     */
+    private static function opcode82(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x53.
+     *
+     * LD D, E
+     *
+     * @param Core $core
+     */
+    private static function opcode83(Core $core)
+    {
+        $core->registerD = $core->registerE;
+    }
+
+    /**
+     * Opcode #0x54.
+     *
+     * LD D, H
+     *
+     * @param Core $core
+     */
+    private static function opcode84(Core $core)
+    {
+        $core->registerD = ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x55.
+     *
+     * LD D, L
+     *
+     * @param Core $core
+     */
+    private static function opcode85(Core $core)
+    {
+        $core->registerD = ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x56.
+     *
+     * LD D, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode86(Core $core)
+    {
+        $core->registerD = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x57.
+     *
+     * LD D, A
+     *
+     * @param Core $core
+     */
+    private static function opcode87(Core $core)
+    {
+        $core->registerD = $core->registerA;
+    }
+
+    /**
+     * Opcode #0x58.
+     *
+     * LD E, B
+     *
+     * @param Core $core
+     */
+    private static function opcode88(Core $core)
+    {
+        $core->registerE = $core->registerB;
+    }
+
+    /**
+     * Opcode #0x59.
+     *
+     * LD E, C
+     *
+     * @param Core $core
+     */
+    private static function opcode89(Core $core)
+    {
+        $core->registerE = $core->registerC;
+    }
+
+    /**
+     * Opcode #0x5A.
+     *
+     * LD E, D
+     *
+     * @param Core $core
+     */
+    private static function opcode90(Core $core)
+    {
+        $core->registerE = $core->registerD;
+    }
+
+    /**
+     * Opcode #0x5B.
+     *
+     * LD E, E
+     *
+     * @param Core $core
+     */
+    private static function opcode91(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x5C.
+     *
+     * LD E, H
+     *
+     * @param Core $core
+     */
+    private static function opcode92(Core $core)
+    {
+        $core->registerE = ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x5D.
+     *
+     * LD E, L
+     *
+     * @param Core $core
+     */
+    private static function opcode93(Core $core)
+    {
+        $core->registerE = ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x5E.
+     *
+     * LD E, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode94(Core $core)
+    {
+        $core->registerE = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x5F.
+     *
+     * LD E, A
+     *
+     * @param Core $core
+     */
+    private static function opcode95(Core $core)
+    {
+        $core->registerE = $core->registerA;
+    }
+
+    /**
+     * Opcode #0x60.
+     *
+     * LD H, B
+     *
+     * @param Core $core
+     */
+    private static function opcode96(Core $core)
+    {
+        $core->registersHL = ($core->registerB << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x61.
+     *
+     * LD H, C
+     *
+     * @param Core $core
+     */
+    private static function opcode97(Core $core)
+    {
+        $core->registersHL = ($core->registerC << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x62.
+     *
+     * LD H, D
+     *
+     * @param Core $core
+     */
+    private static function opcode98(Core $core)
+    {
+        $core->registersHL = ($core->registerD << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x63.
+     *
+     * LD H, E
+     *
+     * @param Core $core
+     */
+    private static function opcode99(Core $core)
+    {
+        $core->registersHL = ($core->registerE << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x64.
+     *
+     * LD H, H
+     *
+     * @param Core $core
+     */
+    private static function opcode100(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x65.
+     *
+     * LD H, L
+     *
+     * @param Core $core
+     */
+    private static function opcode101(Core $core)
+    {
+        $core->registersHL = (($core->registersHL & 0xFF) << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x66.
+     *
+     * LD H, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode102(Core $core)
+    {
+        $core->registersHL = ($core->memoryReader[$core->registersHL]($core, $core->registersHL) << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x67.
+     *
+     * LD H, A
+     *
+     * @param Core $core
+     */
+    private static function opcode103(Core $core)
+    {
+        $core->registersHL = ($core->registerA << 8) + ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x68.
+     *
+     * LD L, B
+     *
+     * @param Core $core
+     */
+    private static function opcode104(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->registerB;
+    }
+
+    /**
+     * Opcode #0x69.
+     *
+     * LD L, C
+     *
+     * @param Core $core
+     */
+    private static function opcode105(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->registerC;
+    }
+
+    /**
+     * Opcode #0x6A.
+     *
+     * LD L, D
+     *
+     * @param Core $core
+     */
+    private static function opcode106(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->registerD;
+    }
+
+    /**
+     * Opcode #0x6B.
+     *
+     * LD L, E
+     *
+     * @param Core $core
+     */
+    private static function opcode107(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->registerE;
+    }
+
+    /**
+     * Opcode #0x6C.
+     *
+     * LD L, H
+     *
+     * @param Core $core
+     */
+    private static function opcode108(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x6D.
+     *
+     * LD L, L
+     *
+     * @param Core $core
+     */
+    private static function opcode109(Core $core)
+    {
+        //Do nothing...
+    }
+
+    /**
+     * Opcode #0x6E.
+     *
+     * LD L, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode110(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x6F.
+     *
+     * LD L, A
+     *
+     * @param Core $core
+     */
+    private static function opcode111(Core $core)
+    {
+        $core->registersHL = ($core->registersHL & 0xFF00) + $core->registerA;
+    }
+
+    /**
+     * Opcode #0x70.
+     *
+     * LD (HL), B
+     *
+     * @param Core $core
+     */
+    private static function opcode112(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerB);
+    }
+
+    /**
+     * Opcode #0x71.
+     *
+     * LD (HL), C
+     *
+     * @param Core $core
+     */
+    private static function opcode113(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerC);
+    }
+
+    /**
+     * Opcode #0x72.
+     *
+     * LD (HL), D
+     *
+     * @param Core $core
+     */
+    private static function opcode114(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerD);
+    }
+
+    /**
+     * Opcode #0x73.
+     *
+     * LD (HL), E
+     *
+     * @param Core $core
+     */
+    private static function opcode115(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerE);
+    }
+
+    /**
+     * Opcode #0x74.
+     *
+     * LD (HL), H
+     *
+     * @param Core $core
+     */
+    private static function opcode116(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, ($core->registersHL >> 8));
+    }
+
+    /**
+     * Opcode #0x75.
+     *
+     * LD (HL), L
+     *
+     * @param Core $core
+     */
+    private static function opcode117(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, ($core->registersHL & 0xFF));
+    }
+
+    /**
+     * Opcode #0x76.
+     *
+     * HALT
+     *
+     * @param \GameBoy\Core $core
+     * @throws Exception
+     */
+    private static function opcode118(Core $core)
+    {
+        if ($core->untilEnable == 1) {
+            /*VBA-M says this fixes Torpedo Range (Seems to work):
+            Involves an edge case where an EI is placed right before a HALT.
+            EI in this case actually is immediate, so we adjust (Hacky?).*/
+            $core->programCounter = $core->nswtuw($core->programCounter - 1);
+        } else {
+            if (!$core->halt && !$core->IME && !$core->cGBC && !$core->usedBootROM && ($core->memory[0xFF0F] & $core->memory[0xFFFF] & 0x1F) > 0) {
+                $core->skipPCIncrement = true;
+            }
+            $core->halt = true;
+            while ($core->halt && ($core->stopEmulator & 1) == 0) {
+                /*We're hijacking the main interpreter loop to do this dirty business
+                in order to not slow down the main interpreter loop code with halt state handling.*/
+                $bitShift = 0;
+                $testbit = 1;
+                $interrupts = $core->memory[0xFFFF] & $core->memory[0xFF0F];
+                while ($bitShift < 5) {
+                    //Check to see if an interrupt is enabled AND requested.
+                    if (($testbit & $interrupts) == $testbit) {
+                        $core->halt = false; //Get out of halt state if in halt state.
+                        return; //Let the main interrupt handler compute the interrupt.
+                    }
+                    $testbit = 1 << ++$bitShift;
+                }
+                $core->CPUTicks = 1; //1 machine cycle under HALT...
+                //Timing:
+                $core->updateCore();
+            }
+
+            //Throw an error on purpose to exit out of the loop.
+            throw new Exception('HALT_OVERRUN');
+        }
+    }
+
+    /**
+     * Opcode #0x77.
+     *
+     * LD (HL), A
+     *
+     * @param Core $core
+     */
+    private static function opcode119(Core $core)
+    {
+        $core->memoryWrite($core->registersHL, $core->registerA);
+    }
+
+    /**
+     * Opcode #0x78.
+     *
+     * LD A, B
+     *
+     * @param Core $core
+     */
+    private static function opcode120(Core $core)
+    {
+        $core->registerA = $core->registerB;
+    }
+
+    /**
+     * Opcode #0x79.
+     *
+     * LD A, C
+     *
+     * @param Core $core
+     */
+    private static function opcode121(Core $core)
+    {
+        $core->registerA = $core->registerC;
+    }
+
+    /**
+     * Opcode #0x7A.
+     *
+     * LD A, D
+     *
+     * @param Core $core
+     */
+    private static function opcode122(Core $core)
+    {
+        $core->registerA = $core->registerD;
+    }
+
+    /**
+     * Opcode #0x7B.
+     *
+     * LD A, E
+     *
+     * @param Core $core
+     */
+    private static function opcode123(Core $core)
+    {
+        $core->registerA = $core->registerE;
+    }
+
+    /**
+     * Opcode #0x7C.
+     *
+     * LD A, H
+     *
+     * @param Core $core
+     */
+    private static function opcode124(Core $core)
+    {
+        $core->registerA = ($core->registersHL >> 8);
+    }
+
+    /**
+     * Opcode #0x7D.
+     *
+     * LD A, L
+     *
+     * @param Core $core
+     */
+    private static function opcode125(Core $core)
+    {
+        $core->registerA = ($core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0x7E.
+     *
+     * LD, A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode126(Core $core)
+    {
+        $core->registerA = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+    }
+
+    /**
+     * Opcode #0x7F.
+     *
+     * LD A, A
+     *
+     * @param Core $core
+     */
+    private static function opcode127(Core $core)
+    {
+        //Do Nothing...
+    }
+
+    /**
+     * Opcode #0x80.
+     *
+     * ADD A, B
+     *
+     * @param Core $core
+     */
+    private static function opcode128(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerB;
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x81.
+     *
+     * ADD A, C
+     *
+     * @param Core $core
+     */
+    private static function opcode129(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerC;
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x82.
+     *
+     * ADD A, D
+     *
+     * @param Core $core
+     */
+    private static function opcode130(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerD;
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x83.
+     *
+     * ADD A, E
+     *
+     * @param Core $core
+     */
+    private static function opcode131(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerE;
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x84.
+     *
+     * ADD A, H
+     *
+     * @param Core $core
+     */
+    private static function opcode132(Core $core)
+    {
+        $dirtySum = $core->registerA + ($core->registersHL >> 8);
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x85.
+     *
+     * ADD A, L
+     *
+     * @param Core $core
+     */
+    private static function opcode133(Core $core)
+    {
+        $dirtySum = $core->registerA + ($core->registersHL & 0xFF);
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x86.
+     *
+     * ADD A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode134(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x87.
+     *
+     * ADD A, A
+     *
+     * @param Core $core
+     */
+    private static function opcode135(Core $core)
+    {
+        $dirtySum = $core->registerA * 2;
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x88.
+     *
+     * ADC A, B
+     *
+     * @param Core $core
+     */
+    private static function opcode136(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerB + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($core->registerB & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x89.
+     *
+     * ADC A, C
+     *
+     * @param Core $core
+     */
+    private static function opcode137(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerC + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($core->registerC & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8A.
+     *
+     * ADC A, D
+     *
+     * @param Core $core
+     */
+    private static function opcode138(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerD + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($core->registerD & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8B.
+     *
+     * ADC A, E
+     *
+     * @param Core $core
+     */
+    private static function opcode139(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->registerE + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($core->registerE & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8C.
+     *
+     * ADC A, H
+     *
+     * @param Core $core
+     */
+    private static function opcode140(Core $core)
+    {
+        $tempValue = ($core->registersHL >> 8);
+        $dirtySum = $core->registerA + $tempValue + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($tempValue & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8D.
+     *
+     * ADC A, L
+     *
+     * @param Core $core
+     */
+    private static function opcode141(Core $core)
+    {
+        $tempValue = ($core->registersHL & 0xFF);
+        $dirtySum = $core->registerA + $tempValue + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($tempValue & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8E.
+     *
+     * ADC A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode142(Core $core)
+    {
+        $tempValue = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $dirtySum = $core->registerA + $tempValue + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($tempValue & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x8F.
+     *
+     * ADC A, A
+     *
+     * @param Core $core
+     */
+    private static function opcode143(Core $core)
+    {
+        $dirtySum = ($core->registerA * 2) + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($core->registerA & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0x90.
+     *
+     * SUB A, B
+     *
+     * @param Core $core
+     */
+    private static function opcode144(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerB;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($core->registerB & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x91.
+     *
+     * SUB A, C
+     *
+     * @param Core $core
+     */
+    private static function opcode145(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerC;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($core->registerC & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x92.
+     *
+     * SUB A, D
+     *
+     * @param Core $core
+     */
+    private static function opcode146(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerD;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($core->registerD & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x93.
+     *
+     * SUB A, E
+     *
+     * @param Core $core
+     */
+    private static function opcode147(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerE;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($core->registerE & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x94.
+     *
+     * SUB A, H
+     *
+     * @param Core $core
+     */
+    private static function opcode148(Core $core)
+    {
+        $temp_var = $core->registersHL >> 8;
+        $dirtySum = $core->registerA - $temp_var;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($temp_var & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x95.
+     *
+     * SUB A, L
+     *
+     * @param Core $core
+     */
+    private static function opcode149(Core $core)
+    {
+        $dirtySum = $core->registerA - ($core->registersHL & 0xFF);
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($core->registersHL & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x96.
+     *
+     * SUB A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode150(Core $core)
+    {
+        $temp_var = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $dirtySum = $core->registerA - $temp_var;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($temp_var & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x97.
+     *
+     * SUB A, A
+     *
+     * @param Core $core
+     */
+    private static function opcode151(Core $core)
+    {
+        //number - same number == 0
+        $core->registerA = 0;
+        $core->FHalfCarry = $core->FCarry = false;
+        $core->FZero = $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x98.
+     *
+     * SBC A, B
+     *
+     * @param Core $core
+     */
+    private static function opcode152(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerB - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($core->registerB & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x99.
+     *
+     * SBC A, C
+     *
+     * @param Core $core
+     */
+    private static function opcode153(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerC - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($core->registerC & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9A.
+     *
+     * SBC A, D
+     *
+     * @param Core $core
+     */
+    private static function opcode154(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerD - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($core->registerD & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9B.
+     *
+     * SBC A, E
+     *
+     * @param Core $core
+     */
+    private static function opcode155(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerE - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($core->registerE & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9C.
+     *
+     * SBC A, H
+     *
+     * @param Core $core
+     */
+    private static function opcode156(Core $core)
+    {
+        $temp_var = $core->registersHL >> 8;
+        $dirtySum = $core->registerA - $temp_var - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($temp_var & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9D.
+     *
+     * SBC A, L
+     *
+     * @param Core $core
+     */
+    private static function opcode157(Core $core)
+    {
+        $dirtySum = $core->registerA - ($core->registersHL & 0xFF) - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($core->registersHL & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9E.
+     *
+     * SBC A, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode158(Core $core)
+    {
+        $temp_var = $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $dirtySum = $core->registerA - $temp_var - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($temp_var & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0x9F.
+     *
+     * SBC A, A
+     *
+     * @param Core $core
+     */
+    private static function opcode159(Core $core)
+    {
+        //Optimized SBC A:
+        if ($core->FCarry) {
+            $core->FZero = false;
+            $core->FSubtract = $core->FHalfCarry = $core->FCarry = true;
+            $core->registerA = 0xFF;
+        } else {
+            $core->FHalfCarry = $core->FCarry = false;
+            $core->FSubtract = $core->FZero = true;
+            $core->registerA = 0;
+        }
+    }
+
+    /**
+     * Opcode #0xA0.
+     *
+     * AND B
+     *
+     * @param Core $core
+     */
+    private static function opcode160(Core $core)
+    {
+        $core->registerA &= $core->registerB;
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA1.
+     *
+     * AND C
+     *
+     * @param Core $core
+     */
+    private static function opcode161(Core $core)
+    {
+        $core->registerA &= $core->registerC;
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA2.
+     *
+     * AND D
+     *
+     * @param Core $core
+     */
+    private static function opcode162(Core $core)
+    {
+        $core->registerA &= $core->registerD;
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA3.
+     *
+     * AND E
+     *
+     * @param Core $core
+     */
+    private static function opcode163(Core $core)
+    {
+        $core->registerA &= $core->registerE;
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA4.
+     *
+     * AND H
+     *
+     * @param Core $core
+     */
+    private static function opcode164(Core $core)
+    {
+        $core->registerA &= ($core->registersHL >> 8);
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA5.
+     *
+     * AND L
+     *
+     * @param Core $core
+     */
+    private static function opcode165(Core $core)
+    {
+        $core->registerA &= ($core->registersHL & 0xFF);
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA6.
+     *
+     * AND (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode166(Core $core)
+    {
+        $core->registerA &= $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA7.
+     *
+     * AND A
+     *
+     * @param Core $core
+     */
+    private static function opcode167(Core $core)
+    {
+        //number & same number = same number
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA8.
+     *
+     * XOR B
+     *
+     * @param Core $core
+     */
+    private static function opcode168(Core $core)
+    {
+        $core->registerA ^= $core->registerB;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xA9.
+     *
+     * XOR C
+     *
+     * @param Core $core
+     */
+    private static function opcode169(Core $core)
+    {
+        $core->registerA ^= $core->registerC;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAA.
+     *
+     * XOR D
+     *
+     * @param Core $core
+     */
+    private static function opcode170(Core $core)
+    {
+        $core->registerA ^= $core->registerD;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAB.
+     *
+     * XOR E
+     *
+     * @param Core $core
+     */
+    private static function opcode171(Core $core)
+    {
+        $core->registerA ^= $core->registerE;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAC.
+     *
+     * XOR H
+     *
+     * @param Core $core
+     */
+    private static function opcode172(Core $core)
+    {
+        $core->registerA ^= ($core->registersHL >> 8);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAD.
+     *
+     * XOR L
+     *
+     * @param Core $core
+     */
+    private static function opcode173(Core $core)
+    {
+        $core->registerA ^= ($core->registersHL & 0xFF);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAE.
+     *
+     * XOR (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode174(Core $core)
+    {
+        $core->registerA ^= $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xAF.
+     *
+     * XOR A
+     *
+     * @param Core $core
+     */
+    private static function opcode175(Core $core)
+    {
+        //number ^ same number == 0
+        $core->registerA = 0;
+        $core->FZero = true;
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xB0.
+     *
+     * OR B
+     *
+     * @param Core $core
+     */
+    private static function opcode176(Core $core)
+    {
+        $core->registerA |= $core->registerB;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB1.
+     *
+     * OR C
+     *
+     * @param Core $core
+     */
+    private static function opcode177(Core $core)
+    {
+        $core->registerA |= $core->registerC;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB2.
+     *
+     * OR D
+     *
+     * @param Core $core
+     */
+    private static function opcode178(Core $core)
+    {
+        $core->registerA |= $core->registerD;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB3.
+     *
+     * OR E
+     *
+     * @param Core $core
+     */
+    private static function opcode179(Core $core)
+    {
+        $core->registerA |= $core->registerE;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB4.
+     *
+     * OR H
+     *
+     * @param Core $core
+     */
+    private static function opcode180(Core $core)
+    {
+        $core->registerA |= ($core->registersHL >> 8);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB5.
+     *
+     * OR L
+     *
+     * @param Core $core
+     */
+    private static function opcode181(Core $core)
+    {
+        $core->registerA |= ($core->registersHL & 0xFF);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB6.
+     *
+     * OR (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode182(Core $core)
+    {
+        $core->registerA |= $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB7.
+     *
+     * OR A
+     *
+     * @param Core $core
+     */
+    private static function opcode183(Core $core)
+    {
+        //number | same number == same number
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xB8.
+     *
+     * CP B
+     *
+     * @param Core $core
+     */
+    private static function opcode184(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerB;
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xB9.
+     *
+     * CP C
+     *
+     * @param Core $core
+     */
+    private static function opcode185(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerC;
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBA.
+     *
+     * CP D
+     *
+     * @param Core $core
+     */
+    private static function opcode186(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerD;
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBB.
+     *
+     * CP E
+     *
+     * @param Core $core
+     */
+    private static function opcode187(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->registerE;
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBC.
+     *
+     * CP H
+     *
+     * @param Core $core
+     */
+    private static function opcode188(Core $core)
+    {
+        $dirtySum = $core->registerA - ($core->registersHL >> 8);
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBD.
+     *
+     * CP L
+     *
+     * @param Core $core
+     */
+    private static function opcode189(Core $core)
+    {
+        $dirtySum = $core->registerA - ($core->registersHL & 0xFF);
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBE.
+     *
+     * CP (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode190(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->memoryReader[$core->registersHL]($core, $core->registersHL);
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xBF.
+     *
+     * CP A
+     *
+     * @param Core $core
+     */
+    private static function opcode191(Core $core)
+    {
+        $core->FHalfCarry = $core->FCarry = false;
+        $core->FZero = $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xC0.
+     *
+     * RET !FZ
+     *
+     * @param Core $core
+     */
+    private static function opcode192(Core $core)
+    {
+        if (!$core->FZero) {
+            $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+            $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+            $core->CPUTicks += 3;
+        }
+    }
+
+    /**
+     * Opcode #0xC1.
+     *
+     * POP BC
+     *
+     * @param Core $core
+     */
+    private static function opcode193(Core $core)
+    {
+        $core->registerC = $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->registerB = $core->memoryRead(($core->stackPointer + 1) & 0xFFFF);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xC2.
+     *
+     * JP !FZ, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode194(Core $core)
+    {
+        if (!$core->FZero) {
+            $core->programCounter = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xC3.
+     *
+     * JP nn
+     *
+     * @param Core $core
+     */
+    private static function opcode195(Core $core)
+    {
+        $core->programCounter = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+    }
+
+    /**
+     * Opcode #0xC4.
+     *
+     * CALL !FZ, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode196(Core $core)
+    {
+        if (!$core->FZero) {
+            $temp_pc = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+            $core->programCounter = $temp_pc;
+            $core->CPUTicks += 3;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xC5.
+     *
+     * PUSH BC
+     *
+     * @param Core $core
+     */
+    private static function opcode197(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registerB);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registerC);
+    }
+
+    /**
+     * Opcode #0xC6.
+     *
+     * ADD, n
+     *
+     * @param Core $core
+     */
+    private static function opcode198(Core $core)
+    {
+        $dirtySum = $core->registerA + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->FHalfCarry = ($dirtySum & 0xF) < ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xC7.
+     *
+     * RST 0
+     *
+     * @param Core $core
+     */
+    private static function opcode199(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0;
+    }
+
+    /**
+     * Opcode #0xC8.
+     *
+     * RET FZ
+     *
+     * @param Core $core
+     */
+    private static function opcode200(Core $core)
+    {
+        if ($core->FZero) {
+            $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+            $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+            $core->CPUTicks += 3;
+        }
+    }
+
+    /**
+     * Opcode #0xC9.
+     *
+     * RET
+     *
+     * @param Core $core
+     */
+    private static function opcode201(Core $core)
+    {
+        $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xCA.
+     *
+     * JP FZ, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode202(Core $core)
+    {
+        if ($core->FZero) {
+            $core->programCounter = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xCB.
+     *
+     * Secondary OP Code Set:
+     *
+     * @param Core $core
+     */
+    private static function opcode203(Core $core)
+    {
+        $opcode = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        //Increment the program counter to the next instruction:
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        //Get how many CPU cycles the current 0xCBXX op code counts for:
+        $core->CPUTicks = $core->SecondaryTICKTable[$opcode];
+        //Execute secondary OP codes for the 0xCB OP code call.
+        Cbopcode::run($core, $opcode);
+    }
+
+    /**
+     * Opcode #0xCC.
+     *
+     * CALL FZ, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode204(Core $core)
+    {
+        if ($core->FZero) {
+            $temp_pc = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+            $core->programCounter = $temp_pc;
+            $core->CPUTicks += 3;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xCD.
+     *
+     * CALL nn
+     *
+     * @param Core $core
+     */
+    private static function opcode205(Core $core)
+    {
+        $temp_pc = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = $temp_pc;
+    }
+
+    /**
+     * Opcode #0xCE.
+     *
+     * ADC A, n
+     *
+     * @param Core $core
+     */
+    private static function opcode206(Core $core)
+    {
+        $tempValue = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $dirtySum = $core->registerA + $tempValue + (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) + ($tempValue & 0xF) + (($core->FCarry) ? 1 : 0) > 0xF);
+        $core->FCarry = ($dirtySum > 0xFF);
+        $core->registerA = $dirtySum & 0xFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = false;
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xCF.
+     *
+     * RST 0x8
+     *
+     * @param Core $core
+     */
+    private static function opcode207(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x8;
+    }
+
+    /**
+     * Opcode #0xD0.
+     *
+     * RET !FC
+     *
+     * @param Core $core
+     */
+    private static function opcode208(Core $core)
+    {
+        if (!$core->FCarry) {
+            $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+            $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+            $core->CPUTicks += 3;
+        }
+    }
+
+    /**
+     * Opcode #0xD1.
+     *
+     * POP DE
+     *
+     * @param Core $core
+     */
+    private static function opcode209(Core $core)
+    {
+        $core->registerE = $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->registerD = $core->memoryRead(($core->stackPointer + 1) & 0xFFFF);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xD2.
+     *
+     * JP !FC, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode210(Core $core)
+    {
+        if (!$core->FCarry) {
+            $core->programCounter = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xD3.
+     *
+     * 0xD3 - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode211(Core $core)
+    {
+        // @TODO
+        // cout("Illegal op code 0xD3 called, pausing emulation.", 2);
+        // pause();
+    }
+
+    /**
+     * Opcode #0xD4.
+     *
+     * CALL !FC, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode212(Core $core)
+    {
+        if (!$core->FCarry) {
+            $temp_pc = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+            $core->programCounter = $temp_pc;
+            $core->CPUTicks += 3;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xD5.
+     *
+     * PUSH DE
+     *
+     * @param Core $core
+     */
+    private static function opcode213(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registerD);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registerE);
+    }
+
+    /**
+     * Opcode #0xD6.
+     *
+     * SUB A, n
+     *
+     * @param Core $core
+     */
+    private static function opcode214(Core $core)
+    {
+        $temp_var = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $dirtySum = $core->registerA - $temp_var;
+        $core->FHalfCarry = ($core->registerA & 0xF) < ($temp_var & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xD7.
+     *
+     * RST 0x10
+     *
+     * @param Core $core
+     */
+    private static function opcode215(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x10;
+    }
+
+    /**
+     * Opcode #0xD8.
+     *
+     * RET FC
+     *
+     * @param Core $core
+     */
+    private static function opcode216(Core $core)
+    {
+        if ($core->FCarry) {
+            $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+            $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+            $core->CPUTicks += 3;
+        }
+    }
+
+    /**
+     * Opcode #0xD9.
+     *
+     * RETI
+     *
+     * @param Core $core
+     */
+    private static function opcode217(Core $core)
+    {
+        $core->programCounter = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+        //$core->IME = true;
+        $core->untilEnable = 2;
+    }
+
+    /**
+     * Opcode #0xDA.
+     *
+     * JP FC, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode218(Core $core)
+    {
+        if ($core->FCarry) {
+            $core->programCounter = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            ++$core->CPUTicks;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xDB.
+     *
+     * 0xDB - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode219(Core $core)
+    {
+        echo 'Illegal op code 0xDB called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xDC.
+     *
+     * CALL FC, nn
+     *
+     * @param Core $core
+     */
+    private static function opcode220(Core $core)
+    {
+        if ($core->FCarry) {
+            $temp_pc = ($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+            $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+            $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+            $core->programCounter = $temp_pc;
+            $core->CPUTicks += 3;
+        } else {
+            $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+        }
+    }
+
+    /**
+     * Opcode #0xDD.
+     *
+     * 0xDD - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode221(Core $core)
+    {
+        echo 'Illegal op code 0xDD called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xDE.
+     *
+     * SBC A, n
+     *
+     * @param Core $core
+     */
+    private static function opcode222(Core $core)
+    {
+        $temp_var = $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $dirtySum = $core->registerA - $temp_var - (($core->FCarry) ? 1 : 0);
+        $core->FHalfCarry = (($core->registerA & 0xF) - ($temp_var & 0xF) - (($core->FCarry) ? 1 : 0) < 0);
+        $core->FCarry = ($dirtySum < 0);
+        $core->registerA = $core->unsbtub($dirtySum);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xDF.
+     *
+     * RST 0x18
+     *
+     * @param Core $core
+     */
+    private static function opcode223(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x18;
+    }
+
+    /**
+     * Opcode #0xE0.
+     *
+     * LDH (n), A
+     *
+     * @param Core $core
+     */
+    private static function opcode224(Core $core)
+    {
+        $core->memoryWrite(0xFF00 + $core->memoryReader[$core->programCounter]($core, $core->programCounter), $core->registerA);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xE1.
+     *
+     * POP HL
+     *
+     * @param Core $core
+     */
+    private static function opcode225(Core $core)
+    {
+        $core->registersHL = ($core->memoryRead(($core->stackPointer + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xE2.
+     *
+     * LD (C), A
+     *
+     * @param Core $core
+     */
+    private static function opcode226(Core $core)
+    {
+        $core->memoryWrite(0xFF00 + $core->registerC, $core->registerA);
+    }
+
+    /**
+     * Opcode #0xE3.
+     *
+     * 0xE3 - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode227(Core $core)
+    {
+        echo 'Illegal op code 0xE3 called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xE4.
+     *
+     * 0xE4 - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode228(Core $core)
+    {
+        echo 'Illegal op code 0xE4 called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xE5.
+     *
+     * PUSH HL
+     *
+     * @param Core $core
+     */
+    private static function opcode229(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registersHL >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registersHL & 0xFF);
+    }
+
+    /**
+     * Opcode #0xE6.
+     *
+     * AND n
+     *
+     * @param Core $core
+     */
+    private static function opcode230(Core $core)
+    {
+        $core->registerA &= $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FZero = ($core->registerA == 0);
+        $core->FHalfCarry = true;
+        $core->FSubtract = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xE7.
+     *
+     * RST 0x20
+     *
+     * @param Core $core
+     */
+    private static function opcode231(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x20;
+    }
+
+    /**
+     * Opcode #0xE8.
+     *
+     * ADD SP, n
+     *
+     * @param Core $core
+     */
+    private static function opcode232(Core $core)
+    {
+        $signedByte = $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter));
+        $temp_value = $core->nswtuw($core->stackPointer + $signedByte);
+        $core->FCarry = ((($core->stackPointer ^ $signedByte ^ $temp_value) & 0x100) == 0x100);
+        $core->FHalfCarry = ((($core->stackPointer ^ $signedByte ^ $temp_value) & 0x10) == 0x10);
+        $core->stackPointer = $temp_value;
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FZero = $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0xE9.
+     *
+     * JP, (HL)
+     *
+     * @param Core $core
+     */
+    private static function opcode233(Core $core)
+    {
+        $core->programCounter = $core->registersHL;
+    }
+
+    /**
+     * Opcode #0xEA.
+     *
+     * LD n, A
+     *
+     * @param Core $core
+     */
+    private static function opcode234(Core $core)
+    {
+        $core->memoryWrite(($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter), $core->registerA);
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xEB.
+     *
+     * 0xEB - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode235(Core $core)
+    {
+        echo 'Illegal op code 0xEB called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xEC.
+     *
+     * 0xEC - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode236(Core $core)
+    {
+        echo 'Illegal op code 0xEC called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xED.
+     *
+     * 0xED - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode237(Core $core)
+    {
+        echo 'Illegal op code 0xED called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xEE.
+     *
+     * XOR n
+     *
+     * @param Core $core
+     */
+    private static function opcode238(Core $core)
+    {
+        $core->registerA ^= $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->FZero = ($core->registerA == 0);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FSubtract = $core->FHalfCarry = $core->FCarry = false;
+    }
+
+    /**
+     * Opcode #0xEF.
+     *
+     * RST 0x28
+     *
+     * @param Core $core
+     */
+    private static function opcode239(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x28;
+    }
+
+    /**
+     * Opcode #0xF0.
+     *
+     * LDH A, (n)
+     *
+     * @param Core $core
+     */
+    private static function opcode240(Core $core)
+    {
+        $core->registerA = $core->memoryRead(0xFF00 + $core->memoryReader[$core->programCounter]($core, $core->programCounter));
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xF1.
+     *
+     * POP AF
+     *
+     * @param Core $core
+     */
+    private static function opcode241(Core $core)
+    {
+        $temp_var = $core->memoryReader[$core->stackPointer]($core, $core->stackPointer);
+        $core->FZero = (($temp_var & 0x80) == 0x80);
+        $core->FSubtract = (($temp_var & 0x40) == 0x40);
+        $core->FHalfCarry = (($temp_var & 0x20) == 0x20);
+        $core->FCarry = (($temp_var & 0x10) == 0x10);
+        $core->registerA = $core->memoryRead(($core->stackPointer + 1) & 0xFFFF);
+        $core->stackPointer = ($core->stackPointer + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xF2.
+     *
+     * LD A, (C)
+     *
+     * @param Core $core
+     */
+    private static function opcode242(Core $core)
+    {
+        $core->registerA = $core->memoryRead(0xFF00 + $core->registerC);
+    }
+
+    /**
+     * Opcode #0xF3.
+     *
+     * DI
+     *
+     * @param Core $core
+     */
+    private static function opcode243(Core $core)
+    {
+        $core->IME = false;
+        $core->untilEnable = 0;
+    }
+
+    /**
+     * Opcode #0xF4.
+     *
+     * 0xF4 - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode244(Core $core)
+    {
+        // @TODO
+        // cout("Illegal op code 0xF4 called, pausing emulation.", 2);
+        // pause();
+    }
+
+    /**
+     * Opcode #0xF5.
+     *
+     * PUSH AF
+     *
+     * @param Core $core
+     */
+    private static function opcode245(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->registerA);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, (($core->FZero) ? 0x80 : 0) + (($core->FSubtract) ? 0x40 : 0) + (($core->FHalfCarry) ? 0x20 : 0) + (($core->FCarry) ? 0x10 : 0));
+    }
+
+    /**
+     * Opcode #0xF6.
+     *
+     * OR n
+     *
+     * @param Core $core
+     */
+    private static function opcode246(Core $core)
+    {
+        $core->registerA |= $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->FZero = ($core->registerA == 0);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FSubtract = $core->FCarry = $core->FHalfCarry = false;
+    }
+
+    /**
+     * Opcode #0xF7.
+     *
+     * RST 0x30
+     *
+     * @param Core $core
+     */
+    private static function opcode247(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x30;
+    }
+
+    /**
+     * Opcode #0xF8.
+     *
+     * LDHL SP, n
+     *
+     * @param Core $core
+     */
+    private static function opcode248(Core $core)
+    {
+        $signedByte = $core->usbtsb($core->memoryReader[$core->programCounter]($core, $core->programCounter));
+        $core->registersHL = $core->nswtuw($core->stackPointer + $signedByte);
+        $core->FCarry = ((($core->stackPointer ^ $signedByte ^ $core->registersHL) & 0x100) == 0x100);
+        $core->FHalfCarry = ((($core->stackPointer ^ $signedByte ^ $core->registersHL) & 0x10) == 0x10);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FZero = $core->FSubtract = false;
+    }
+
+    /**
+     * Opcode #0xF9.
+     *
+     * LD SP, HL
+     *
+     * @param Core $core
+     */
+    private static function opcode249(Core $core)
+    {
+        $core->stackPointer = $core->registersHL;
+    }
+
+    /**
+     * Opcode #0xFA.
+     *
+     * LD A, (nn)
+     *
+     * @param Core $core
+     */
+    private static function opcode250(Core $core)
+    {
+        $core->registerA = $core->memoryRead(($core->memoryRead(($core->programCounter + 1) & 0xFFFF) << 8) + $core->memoryReader[$core->programCounter]($core, $core->programCounter));
+        $core->programCounter = ($core->programCounter + 2) & 0xFFFF;
+    }
+
+    /**
+     * Opcode #0xFB.
+     *
+     * EI
+     *
+     * @param Core $core
+     */
+    private static function opcode251(Core $core)
+    {
+        $core->untilEnable = 2;
+    }
+
+    /**
+     * Opcode #0xFC.
+     *
+     * 0xFC - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode252(Core $core)
+    {
+        echo 'Illegal op code 0xFC called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xFD.
+     *
+     * 0xFD - Illegal
+     *
+     * @param Core $core
+     */
+    private static function opcode253(Core $core)
+    {
+        echo 'Illegal op code 0xFD called, pausing emulation.';
+        exit();
+    }
+
+    /**
+     * Opcode #0xFE.
+     *
+     * CP n
+     *
+     * @param Core $core
+     */
+    private static function opcode254(Core $core)
+    {
+        $dirtySum = $core->registerA - $core->memoryReader[$core->programCounter]($core, $core->programCounter);
+        $core->FHalfCarry = ($core->unsbtub($dirtySum) & 0xF) > ($core->registerA & 0xF);
+        $core->FCarry = ($dirtySum < 0);
+        $core->FZero = ($dirtySum == 0);
+        $core->programCounter = ($core->programCounter + 1) & 0xFFFF;
+        $core->FSubtract = true;
+    }
+
+    /**
+     * Opcode #0xFF.
+     *
+     * RST 0x38
+     *
+     * @param Core $core
+     */
+    private static function opcode255(Core $core)
+    {
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter >> 8);
+        $core->stackPointer = $core->unswtuw($core->stackPointer - 1);
+        $core->memoryWrite($core->stackPointer, $core->programCounter & 0xFF);
+        $core->programCounter = 0x38;
     }
 }
