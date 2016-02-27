@@ -12,7 +12,7 @@ class Keyboard
     public function __construct(Core $core)
     {
         $this->core = $core;
-        exec('stty -icanon');
+        exec('stty -icanon -echo');
         $this->file = fopen('php://stdin', 'r');
         stream_set_blocking($this->file, false);
     }
