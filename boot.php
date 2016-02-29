@@ -14,10 +14,17 @@ use GameBoy\Canvas\TerminalCanvas;
 use GameBoy\Core;
 use GameBoy\Keyboard;
 
-set_exception_handler(function (Exception $exception) {
-    fwrite(STDERR, $exception->getMessage().PHP_EOL);
-    exit(254);
-});
+if (PHP_VERSION_ID >= 70000) {
+    set_exception_handler(function (Error $exception) {
+        fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+        exit(254);
+    });
+} else {
+    set_exception_handler(function (Exception $exception) {
+        fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+        exit(254);
+    });
+}
 
 if (count($argv) < 2) {
     throw new RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
