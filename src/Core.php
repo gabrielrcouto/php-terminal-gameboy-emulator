@@ -1044,17 +1044,23 @@ class Core
 
         //Get a CanvasPixelArray buffer:
         //Create a white screen
-        $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
 
-        $index = $this->pixelCount;
-        $index2 = $this->rgbCount;
+        if ($this->drawContext->colorEnabled) {
+            $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
 
-        while ($index > 0) {
-            $this->frameBuffer[--$index] = 0x00FFFFFF;
-            $this->canvasBuffer[$index2 -= 4] = 0xFF;
-            $this->canvasBuffer[$index2 + 1] = 0xFF;
-            $this->canvasBuffer[$index2 + 2] = 0xFF;
-            $this->canvasBuffer[$index2 + 3] = 0xFF;
+            $index = $this->pixelCount;
+            $index2 = $this->rgbCount;
+
+            while ($index > 0) {
+                $this->frameBuffer[--$index] = 0x00FFFFFF;
+                $this->canvasBuffer[$index2 -= 4] = 0xFF;
+                $this->canvasBuffer[$index2 + 1] = 0xFF;
+                $this->canvasBuffer[$index2 + 2] = 0xFF;
+                $this->canvasBuffer[$index2 + 3] = 0xFF;
+            }
+        } else {
+            $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, false);
+            $this->frameBuffer = array_fill(0, $this->pixelCount, 0x00FFFFFF);
         }
 
         $this->drawContext->draw($this->canvasBuffer, 0, 0);
@@ -1270,7 +1276,12 @@ class Core
     public function displayShowOff()
     {
         if ($this->drewBlank == 0) {
-            $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
+            if ($this->drawContext->colorEnabled) {
+                $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, 255);
+            } else {
+                $this->canvasBuffer = array_fill(0, 4 * $this->width * $this->height, false);
+            }
+
             $this->drawContext->draw($this->canvasBuffer, 0, 0);
             $this->drewBlank = 2;
         }
@@ -1383,13 +1394,30 @@ class Core
             $bufferIndex = $this->pixelCount;
             $canvasIndex = $this->rgbCount;
 
-            while ($canvasIndex > 3) {
-                //Red
-                $this->canvasBuffer[$canvasIndex -= 4] = ($this->frameBuffer[--$bufferIndex] >> 16) & 0xFF;
-                //Green
-                $this->canvasBuffer[$canvasIndex + 1] = ($this->frameBuffer[$bufferIndex] >> 8) & 0xFF;
-                //Blue
-                $this->canvasBuffer[$canvasIndex + 2] = $this->frameBuffer[$bufferIndex] & 0xFF;
+            if ($this->drawContext->colorEnabled) {
+                // Generate colored CanvasBuffer Version
+                while ($canvasIndex > 3) {
+                    //Red
+                    $this->canvasBuffer[$canvasIndex -= 4] = ($this->frameBuffer[--$bufferIndex] >> 16) & 0xFF;
+                    //Green
+                    $this->canvasBuffer[$canvasIndex + 1] = ($this->frameBuffer[$bufferIndex] >> 8) & 0xFF;
+                    //Blue
+                    $this->canvasBuffer[$canvasIndex + 2] = $this->frameBuffer[$bufferIndex] & 0xFF;
+                }
+            } else {
+                // Generate black&white CanvasBuffer Version
+                while ($bufferIndex > 0) {
+                    $r = ($this->frameBuffer[--$bufferIndex] >> 16) & 0xFF;
+                    $g = ($this->frameBuffer[$bufferIndex] >> 8) & 0xFF;
+                    $b = $this->frameBuffer[$bufferIndex] & 0xFF;
+
+                    // 350 is a good threshold for black and white
+                    if ($r + $g + $b > 350) {
+                        $this->canvasBuffer[$bufferIndex] = true;
+                    } else {
+                        $this->canvasBuffer[$bufferIndex] = false;
+                    }
+                }
             }
 
             //Draw out the CanvasPixelArray data:

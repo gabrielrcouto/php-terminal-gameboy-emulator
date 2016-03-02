@@ -11,7 +11,7 @@ interface DrawContextInterface
     /**
      * Draw image on canvas.
      *
-     * @param array $canvasBuffer Each pixel => 4 items on array (RGBA)
+     * @param array $canvasBuffer If colored, each pixel => 4 items on array (RGBA)
      * @param int   $left
      * @param int   $top
      */
