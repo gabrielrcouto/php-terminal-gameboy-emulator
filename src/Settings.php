@@ -4,70 +4,43 @@ namespace GameBoy;
 
 class Settings
 {
-    //Some settings.
-    public static $settings = [
-        //[0] - Turn on sound.
-        false,
+    //Audio granularity setting (Sampling of audio every x many machine cycles)
+    public static $audioGranularity = 20;
 
-        //[1] - Force Mono sound.
-        false,
+    //Auto Frame Skip
+    public static $autoFrameskip = true;
 
-        //[2] - Give priority to GameBoy mode
-        true,
+    //Colorize GB mode?
+    public static $colorize = false;
 
-        //[3] - Keyboard button map.
-        //Order: Right, Left, Up, Down, A, B, Select, Start
-        ['d', 'a', 'w', 's', ',', '.', 'n', 'm'],
+    //Keyboard button map.
+    //Order: Right, Left, Up, Down, A, B, Select, Start
+    public static $keyboardButtonMap = ['d', 'a', 'w', 's', ',', '.', 'n', 'm'];
 
-        //[4] - Frameskip Amount (Auto frameskip setting allows the script to change this.)
-        0,
+    //Frameskip Amount (Auto frameskip setting allows the script to change this.)
+    public static $frameskipAmout = 0;
 
-        //[5] - Use the data URI BMP method over the canvas tag method?
-        false,
+    //Frameskip base factor
+    public static $frameskipBaseFactor = 10;
 
-        //[6] - How many tiles in each direction when using the BMP method (width * height).
-        [16, 12],
+    //Maximum Frame Skip
+    public static $frameskipMax = 29;
 
-        //[7] - Auto Frame Skip
-        true,
+    //Interval for the emulator loop.
+    public static $loopInterval = 17;
 
-        //[8] - Maximum Frame Skip
-        29,
+    //Target number of machine cycles per loop. (4,194,300 / 1000 * 17)
+    public static $machineCyclesPerLoop = 17826;
 
-        //[9] - Override to allow for MBC1 instead of ROM only (compatibility for broken 3rd-party cartridges).
-        true,
+    //Override MBC RAM disabling and always allow reading and writing to the banks.
+    public static $overrideMBC = true;
 
-        //[10] - Override MBC RAM disabling and always allow reading and writing to the banks.
-        true,
+    //Override to allow for MBC1 instead of ROM only (compatibility for broken 3rd-party cartridges).
+    public static $overrideMBC1 = true;
 
-        //[11] - Audio granularity setting (Sampling of audio every x many machine cycles)
-        20,
+    //Give priority to GameBoy mode
+    public static $priorizeGameBoyMode = true;
 
-        //[12] - Frameskip base factor
-        10,
-
-        //[13] - Target number of machine cycles per loop. (4,194,300 / 1000 * 17)
-        17826,
-
-        //[14] - Sample Rate
-        70000,
-
-        //[15] - How many bits per WAV PCM sample (For browsers that fall back to WAV PCM generation)
-        0x10,
-
-        //[16] - Use the GBC BIOS?
-        false,
-
-        //[17] - Colorize GB mode?
-        false,
-
-        //[18] - Sample size for webkit audio.
-        512,
-
-        //[19] - Whether to display the canvas at 144x160 on fullscreen or as stretched.
-        false,
-
-        //[20] - Interval for the emulator loop.
-        17,
-    ];
+    //Sample Rate
+    public static $sampleRate = 70000;
 }

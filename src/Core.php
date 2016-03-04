@@ -370,7 +370,7 @@ class Core
         $this->ROMBanks[0x53] = 80;
         $this->ROMBanks[0x54] = 96;
 
-        $this->frameCount = Settings::$settings[12];
+        $this->frameCount = Settings::$frameskipBaseFactor;
         $this->pixelCount = $this->width * $this->height;
         $this->rgbCount = $this->pixelCount * 4;
         $this->widthRatio = 160 / $this->width;
@@ -601,7 +601,7 @@ class Core
 
     public function start()
     {
-        Settings::$settings[4] = 0; //Reset the frame skip setting.
+        Settings::$frameskipAmout = 0; //Reset the frame skip setting.
         $this->initMemory(); //Write the startup memory.
         $this->ROMLoad(); //Load the ROM into memory and get cartridge information from it.
         $this->initLCD(); //Initializae the graphics.
@@ -732,7 +732,7 @@ class Core
         switch ($this->cartridgeType) {
             case 0x00:
                 //ROM w/o bank switching
-                if (!Settings::$settings[9]) {
+                if (!Settings::$overrideMBC1) {
                     $MBCType = 'ROM';
                     break;
                 }
@@ -895,7 +895,7 @@ class Core
                 echo 'Only GB mode detected.'.PHP_EOL;
                 break;
             case 0x80: //Both GB + GBC modes
-                $this->cGBC = !Settings::$settings[2];
+                $this->cGBC = !Settings::$priorizeGameBoyMode;
                 echo 'GB and GBC mode detected.'.PHP_EOL;
                 break;
             case 0xC0: //Only GBC mode
@@ -940,7 +940,7 @@ class Core
             echo 'Stepping down from GBC mode.'.PHP_EOL;
             $this->tileCount /= 2;
             $this->tileCountInvalidator = $this->tileCount * 4;
-            if (!Settings::$settings[17]) {
+            if (!Settings::$colorize) {
                 $this->transparentCutoff = 4;
             }
             $this->colorCount = 12;
@@ -995,7 +995,7 @@ class Core
 
     public function initLCD()
     {
-        $this->transparentCutoff = (Settings::$settings[17] || $this->cGBC) ? 32 : 4;
+        $this->transparentCutoff = (Settings::$colorize || $this->cGBC) ? 32 : 4;
         if (count($this->weaveLookup) == 0) {
             //Setup the image decoding lookup table:
             $this->weaveLookup = $this->getTypedArray(256, 0, 'uint16');
@@ -1208,10 +1208,10 @@ class Core
         $this->audioTicks += $timedTicks; //Not the same as the LCD timing (Cannot be altered by display on/off changes!!!).
 
         //Are we past the granularity setting?
-        if ($this->audioTicks >= Settings::$settings[11]) {
+        if ($this->audioTicks >= Settings::$audioGranularity) {
             //Emulator Timing (Timed against audio for optimization):
             $this->emulatorTicks += $this->audioTicks;
-            if ($this->emulatorTicks >= Settings::$settings[13]) {
+            if ($this->emulatorTicks >= Settings::$machineCyclesPerLoop) {
                 //Make sure we don't overdo the audio.
                 if (($this->stopEmulator & 1) == 0) {
                     //LCD off takes at least 2 frames.
@@ -1314,7 +1314,7 @@ class Core
     public function clockUpdate()
     {
         //We're tying in the same timer for RTC and frame skipping, since we can and this reduces load.
-        if (Settings::$settings[7] || $this->cTIMER) {
+        if (Settings::$autoFrameskip || $this->cTIMER) {
             $timeElapsed = ((int) (microtime(true) * 1000)) - $this->lastIteration; //Get the numnber of milliseconds since this last executed.
             if ($this->cTIMER && !$this->RTCHALT) {
                 //Update the MBC3 RTC:
@@ -1337,16 +1337,16 @@ class Core
                     }
                 }
             }
-            if (Settings::$settings[7]) {
+            if (Settings::$autoFrameskip) {
                 //Auto Frame Skip:
-                if ($timeElapsed > Settings::$settings[20]) {
+                if ($timeElapsed > Settings::$loopInterval) {
                     //Did not finish in time...
-                    if (Settings::$settings[4] < Settings::$settings[8]) {
-                        ++Settings::$settings[4];
+                    if (Settings::$frameskipAmout < Settings::$frameskipMax) {
+                        ++Settings::$frameskipAmout;
                     }
-                } elseif (Settings::$settings[4] > 0) {
+                } elseif (Settings::$frameskipAmout > 0) {
                     //We finished on time, decrease frame skipping (throttle to somewhere just below full speed)...
-                    --Settings::$settings[4];
+                    --Settings::$frameskipAmout;
                 }
             }
             $this->lastIteration = (int) (microtime(true) * 1000);
@@ -1356,7 +1356,7 @@ class Core
     public function drawToCanvas()
     {
         //Draw the frame buffer to the canvas:
-        if (Settings::$settings[4] == 0 || $this->frameCount > 0) {
+        if (Settings::$frameskipAmout == 0 || $this->frameCount > 0) {
             //Copy and convert the framebuffer data to the CanvasPixelArray format.
             $bufferIndex = $this->pixelCount;
             $canvasIndex = $this->rgbCount;
@@ -1390,13 +1390,13 @@ class Core
             //Draw out the CanvasPixelArray data:
             $this->drawContext->draw($this->canvasBuffer, 0, 0);
 
-            if (Settings::$settings[4] > 0) {
+            if (Settings::$frameskipAmout > 0) {
                 //Decrement the frameskip counter:
-                $this->frameCount -= Settings::$settings[4];
+                $this->frameCount -= Settings::$frameskipAmout;
             }
         } else {
             //Reset the frameskip counter:
-            $this->frameCount += Settings::$settings[12];
+            $this->frameCount += Settings::$frameskipBaseFactor;
         }
     }
 
@@ -1540,7 +1540,7 @@ class Core
     public function checkPaletteType()
     {
         //Reference the correct palette ahead of time...
-        $this->palette = ($this->cGBC) ? $this->gbcPalette : ((Settings::$settings[17]) ? $this->gbColorizedPalette : $this->gbPalette);
+        $this->palette = ($this->cGBC) ? $this->gbcPalette : ((Settings::$colorize) ? $this->gbColorizedPalette : $this->gbPalette);
     }
 
     public function updateImage($tileIndex, $attribs)
@@ -1710,7 +1710,7 @@ class Core
                 if (!$this->cMBC3) {
                     //memoryReadMBC
                     //Switchable RAM
-                    if ($this->MBCRAMBanksEnabled || Settings::$settings[10]) {
+                    if ($this->MBCRAMBanksEnabled || Settings::$overrideMBC) {
                         return $this->MBCRam[$address + $this->currMBCRAMBankPosition];
                     }
                     //cout("Reading from disabled RAM.", 1);
@@ -1719,7 +1719,7 @@ class Core
                     //MBC3 RTC + RAM:
                     //memoryReadMBC3
                     //Switchable RAM
-                    if ($this->MBCRAMBanksEnabled || Settings::$settings[10]) {
+                    if ($this->MBCRAMBanksEnabled || Settings::$overrideMBC) {
                         switch ($this->currMBCRAMBank) {
                             case 0x00:
                             case 0x01:
@@ -2051,13 +2051,13 @@ class Core
             if (($this->numRAMBanks == 1 / 16 && $address < 0xA200) || $this->numRAMBanks >= 1) {
                 if (!$this->cMBC3) {
                     //memoryWriteMBCRAM
-                    if ($this->MBCRAMBanksEnabled || Settings::$settings[10]) {
+                    if ($this->MBCRAMBanksEnabled || Settings::$overrideMBC) {
                         $this->MBCRam[$address + $this->currMBCRAMBankPosition] = $data;
                     }
                 } else {
                     //MBC3 RTC + RAM:
                     //memoryWriteMBC3RAM
-                    if ($this->MBCRAMBanksEnabled || Settings::$settings[10]) {
+                    if ($this->MBCRAMBanksEnabled || Settings::$overrideMBC) {
                         switch ($this->currMBCRAMBank) {
                             case 0x00:
                             case 0x01:

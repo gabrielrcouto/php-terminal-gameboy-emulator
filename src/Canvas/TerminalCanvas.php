@@ -85,7 +85,7 @@ class TerminalCanvas implements DrawContextInterface
                 $content = "\e[{$this->height}A\e[{$this->width}D";
             }
 
-            $content .= sprintf('FPS: %d - Frame Skip: %s'.PHP_EOL, $this->fps, Settings::$settings[4]);
+            $content .= sprintf('FPS: %d - Frame Skip: %s'.PHP_EOL, $this->fps, Settings::$frameskipAmout);
             $content .= $frame;
 
             echo $content;

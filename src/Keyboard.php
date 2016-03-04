@@ -35,7 +35,7 @@ class Keyboard
         //Maps a keyboard key to a gameboy key.
         //Order: Right, Left, Up, Down, A, B, Select, Start
 
-        $keyIndex = array_search($key, Settings::$settings[3]);
+        $keyIndex = array_search($key, Settings::$keyboardButtonMap);
 
         if ($keyIndex === false) {
             return -1;
