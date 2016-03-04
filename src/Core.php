@@ -336,10 +336,6 @@ class Core
 
     public $rgbCount;
 
-    public $widthRatio;
-
-    public $heightRatio;
-
     //Pointer to the current palette we're using (Used for palette switches during boot or so it can be done anytime)
     public $palette = null;
 
@@ -373,8 +369,6 @@ class Core
         $this->frameCount = Settings::$frameskipBaseFactor;
         $this->pixelCount = $this->width * $this->height;
         $this->rgbCount = $this->pixelCount * 4;
-        $this->widthRatio = 160 / $this->width;
-        $this->heightRatio = 144 / $this->height;
 
         // Copy Data
         $this->DAATable = Data::$DAATable;
@@ -2133,9 +2127,9 @@ class Core
                 //We might have encountered illegal RAM writing or such, so just do nothing...
             }
         //I/O Registers (GB + GBC):
-        } else if ($address == 0xFF00) {
+        } elseif ($address == 0xFF00) {
             $this->memory[0xFF00] = ($data & 0x30) | (((($data & 0x20) == 0) ? ($this->JoyPad >> 4) : 0xF) & ((($data & 0x10) == 0) ? ($this->JoyPad & 0xF) : 0xF));
-        } else if ($address == 0xFF02) {
+        } elseif ($address == 0xFF02) {
             if ((($data & 0x1) == 0x1)) {
                 //Internal clock:
                 $this->memory[0xFF02] = ($data & 0x7F);
@@ -2145,13 +2139,13 @@ class Core
                 $this->memory[0xFF02] = $data;
                 //No connected serial device, so don't trigger interrupt...
             }
-        } else if ($address == 0xFF04) {
+        } elseif ($address == 0xFF04) {
             $this->memory[0xFF04] = 0;
-        } else if ($address == 0xFF07) {
+        } elseif ($address == 0xFF07) {
             $this->memory[0xFF07] = $data & 0x07;
             $this->TIMAEnabled = ($data & 0x04) == 0x04;
             $this->TACClocker = pow(4, (($data & 0x3) != 0) ? ($data & 0x3) : 4); //TODO: Find a way to not make a conditional in here...
-        } else if ($address == 0xFF40) {
+        } elseif ($address == 0xFF40) {
             if ($this->cGBC) {
                 $temp_var = ($data & 0x80) == 0x80;
                 if ($temp_var != $this->LCDisOn) {
@@ -2203,7 +2197,7 @@ class Core
                 }
                 $this->memory[0xFF40] = $data;
             }
-        } else if ($address == 0xFF41) {
+        } elseif ($address == 0xFF41) {
             if ($this->cGBC) {
                 $this->LYCMatchTriggerSTAT = (($data & 0x40) == 0x40);
                 $this->mode2TriggerSTAT = (($data & 0x20) == 0x20);
@@ -2220,12 +2214,12 @@ class Core
                     $this->memory[0xFF0F] |= 0x2;
                 }
             }
-        } else if ($address == 0xFF45) {
+        } elseif ($address == 0xFF45) {
             $this->memory[0xFF45] = $data;
             if ($this->LCDisOn) {
                 $this->matchLYC(); //Get the compare of the first scan line.
             }
-        } else if ($address == 0xFF46) {
+        } elseif ($address == 0xFF46) {
             $this->memory[0xFF46] = $data;
             //DMG cannot DMA from the ROM banks.
             if ($this->cGBC || $data > 0x7F) {
@@ -2235,67 +2229,67 @@ class Core
                     $this->memory[$address++] = $this->memoryRead($data++);
                 }
             }
-        } else if ($address == 0xFF47) {
+        } elseif ($address == 0xFF47) {
             $this->decodePalette(0, $data);
             if ($this->memory[0xFF47] != $data) {
                 $this->memory[0xFF47] = $data;
                 $this->invalidateAll(0);
             }
-        } else if ($address == 0xFF48) {
+        } elseif ($address == 0xFF48) {
             $this->decodePalette(4, $data);
             if ($this->memory[0xFF48] != $data) {
                 $this->memory[0xFF48] = $data;
                 $this->invalidateAll(1);
             }
-        } else if ($address == 0xFF49) {
+        } elseif ($address == 0xFF49) {
             $this->decodePalette(8, $data);
             if ($this->memory[0xFF49] != $data) {
                 $this->memory[0xFF49] = $data;
                 $this->invalidateAll(2);
             }
-        } else if ($address == 0xFF4D) {
+        } elseif ($address == 0xFF4D) {
             if ($this->cGBC) {
                 $this->memory[0xFF4D] = ($data & 0x7F) + ($this->memory[0xFF4D] & 0x80);
             } else {
                 $this->memory[0xFF4D] = $data;
             }
-        } else if ($address == 0xFF4F) {
+        } elseif ($address == 0xFF4F) {
             if ($this->cGBC) {
                 $this->currVRAMBank = $data & 0x01;
                 //Only writable by GBC.
             }
-        } else if ($address == 0xFF50) {
+        } elseif ($address == 0xFF50) {
             if ($this->inBootstrap) {
                 echo 'Boot ROM reads blocked: Bootstrap process has ended.'.PHP_EOL;
                 $this->inBootstrap = false;
                 $this->disableBootROM(); //Fill in the boot ROM ranges with ROM  bank 0 ROM ranges
                 $this->memory[0xFF50] = $data; //Bits are sustained in memory?
             }
-        } else if ($address == 0xFF51) {
+        } elseif ($address == 0xFF51) {
             if ($this->cGBC) {
                 if (!$this->hdmaRunning) {
                     $this->memory[0xFF51] = $data;
                 }
             }
-        } else if ($address == 0xFF52) {
+        } elseif ($address == 0xFF52) {
             if ($this->cGBC) {
                 if (!$this->hdmaRunning) {
                     $this->memory[0xFF52] = $data & 0xF0;
                 }
             }
-        } else if ($address == 0xFF53) {
+        } elseif ($address == 0xFF53) {
             if ($this->cGBC) {
                 if (!$this->hdmaRunning) {
                     $this->memory[0xFF53] = $data & 0x1F;
                 }
             }
-        } else if ($address == 0xFF54) {
+        } elseif ($address == 0xFF54) {
             if ($this->cGBC) {
                 if (!$this->hdmaRunning) {
                     $this->memory[0xFF54] = $data & 0xF0;
                 }
             }
-        } else if ($address == 0xFF55) {
+        } elseif ($address == 0xFF55) {
             if ($this->cGBC) {
                 if (!$this->hdmaRunning) {
                     if (($data & 0x80) == 0) {
@@ -2329,14 +2323,14 @@ class Core
             } else {
                 $this->memory[0xFF55] = $data;
             }
-        } else if ($address == 0xFF68) {
+        } elseif ($address == 0xFF68) {
             if ($this->cGBC) {
                 $this->memory[0xFF69] = 0xFF & $this->gbcRawPalette[$data & 0x3F];
                 $this->memory[0xFF68] = $data;
             } else {
                 $this->memory[0xFF68] = $data;
             }
-        } else if ($address == 0xFF69) {
+        } elseif ($address == 0xFF69) {
             if ($this->cGBC) {
                 $this->setGBCPalette($this->memory[0xFF68] & 0x3F, $data);
                 // high bit = autoincrement
@@ -2350,14 +2344,14 @@ class Core
             } else {
                 $this->memory[0xFF69] = $data;
             }
-        } else if ($address == 0xFF6A) {
+        } elseif ($address == 0xFF6A) {
             if ($this->cGBC) {
                 $this->memory[0xFF6B] = 0xFF & $this->gbcRawPalette[($data & 0x3F) | 0x40];
                 $this->memory[0xFF6A] = $data;
             } else {
                 $this->memory[0xFF6A] = $data;
             }
-        } else if ($address == 0xFF6B) {
+        } elseif ($address == 0xFF6B) {
             if ($this->cGBC) {
                 $this->setGBCPalette(($this->memory[0xFF6A] & 0x3F) + 0x40, $data);
                 // high bit = autoincrement
@@ -2371,7 +2365,7 @@ class Core
             } else {
                 $this->memory[0xFF6B] = $data;
             }
-        } else if ($address == 0xFF6C) {
+        } elseif ($address == 0xFF6C) {
             if ($this->inBootstrap) {
                 if ($this->inBootstrap) {
                     $this->cGBC = ($data == 0x80);
@@ -2379,7 +2373,7 @@ class Core
                 }
                 $this->memory[0xFF6C] = $data;
             }
-        } else if ($address == 0xFF70) {
+        } elseif ($address == 0xFF70) {
             if ($this->cGBC) {
                 $addressCheck = ($this->memory[0xFF51] << 8) | $this->memory[0xFF52]; //Cannot change the RAM bank while WRAM is the source of a running HDMA.
                 if (!$this->hdmaRunning || $addressCheck < 0xD000 || $addressCheck >= 0xE000) {
