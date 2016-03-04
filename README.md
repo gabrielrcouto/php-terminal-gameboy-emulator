@@ -123,8 +123,8 @@ You can use the following command to run the most common checks, such as `php -l
 Converting from the JS paradigm was a lot of work, and I still need to adapt somethings like:
 
 - [x] Code standard - PSRs, please!
-- [ ] Array of functions - Maybe in PHP it's not the best approach
-- [ ] Pixel auxiliary array - Very CPU intersive to convert RGBA every time
+- [x] Array of functions - Maybe in PHP it's not the best approach
+- [x] Pixel auxiliary array - Very CPU intensive to convert RGBA every time
 - [ ] Classes - Core is too big!
 - [ ] Profiling and otimizing - XHProf to find the most intensive functions
 - [ ] Save/Restore - I need to save my Pokémon, please!
