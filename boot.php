@@ -27,13 +27,13 @@ if (PHP_VERSION_ID >= 70000) {
 }
 
 if (count($argv) < 2) {
-    throw new RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
+    throw new \RuntimeException('You need to pass the ROM file name (Ex: drmario.rom)');
 }
 
 $filename = $argv[1];
 
 if (!file_exists($filename)) {
-    throw new RuntimeException(sprintf('"%s" does not exist', $filename));
+    throw new \RuntimeException(sprintf('"%s" does not exist', $filename));
 }
 
 if (extension_loaded('xdebug')) {
@@ -51,11 +51,11 @@ $keyboard = new Keyboard($core);
 $core->start();
 
 if (($core->stopEmulator & 2) == 0) {
-    throw new RuntimeException('The GameBoy core is already running.');
+    throw new \RuntimeException('The GameBoy core is already running.');
 }
 
 if ($core->stopEmulator & 2 != 2) {
-    throw new RuntimeException('GameBoy core cannot run while it has not been initialized.');
+    throw new \RuntimeException('GameBoy core cannot run while it has not been initialized.');
 }
 
 $core->stopEmulator &= 1;
