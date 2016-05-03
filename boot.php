@@ -15,12 +15,12 @@ use GameBoy\Core;
 use GameBoy\Keyboard;
 
 if (PHP_VERSION_ID >= 70000) {
-    set_exception_handler(function (Throwable $exception) {
+    set_exception_handler(function (\Throwable $exception) {
         fwrite(STDERR, $exception->getMessage() . PHP_EOL);
         exit(254);
     });
 } else {
-    set_exception_handler(function (Exception $exception) {
+    set_exception_handler(function (\Exception $exception) {
         fwrite(STDERR, $exception->getMessage() . PHP_EOL);
         exit(254);
     });
