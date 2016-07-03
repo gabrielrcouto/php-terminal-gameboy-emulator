@@ -4,62 +4,9 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "6d7bf9f4d4a59581c0bdf16ecfa1e8b9",
-    "content-hash": "9d0ca641c2c0029c4ebdde83b2a8a6db",
-    "packages": [
-        {
-            "name": "whatthejeff/drawille",
-            "version": "v1.0.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/whatthejeff/php-drawille.git",
-                "reference": "bafea427f5bf2445413f6807000a95f70cc83bfd"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/whatthejeff/php-drawille/zipball/bafea427f5bf2445413f6807000a95f70cc83bfd",
-                "reference": "bafea427f5bf2445413f6807000a95f70cc83bfd",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.4.0"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "4.1.*"
-            },
-            "type": "library",
-            "extra": {
-                "branch-alias": {
-                    "dev-master": "1.0.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-0": {
-                    "Drawille": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jeff Welch",
-                    "email": "whatthejeff@gmail.com"
-                }
-            ],
-            "description": "Terminal drawing with braille",
-            "homepage": "http://github.com/whatthejeff/php-drawille",
-            "keywords": [
-                "Turtle",
-                "braille",
-                "console",
-                "drawing",
-                "terminal"
-            ],
-            "time": "2014-05-26 13:45:31"
-        }
-    ],
+    "hash": "1d43205f748238a612e736313fb85ead",
+    "content-hash": "650da37ee06349860cc3ce6988504476",
+    "packages": [],
     "packages-dev": [
         {
             "name": "squizlabs/php_codesniffer",
@@ -136,16 +83,16 @@
         },
         {
             "name": "symfony/finder",
-            "version": "v3.0.2",
+            "version": "v3.1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/finder.git",
-                "reference": "623bda0abd9aa29e529c8e9c08b3b84171914723"
+                "reference": "8201978de88a9fa0923e18601bb17f1df9c721e7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/finder/zipball/623bda0abd9aa29e529c8e9c08b3b84171914723",
-                "reference": "623bda0abd9aa29e529c8e9c08b3b84171914723",
+                "url": "https://api.github.com/repos/symfony/finder/zipball/8201978de88a9fa0923e18601bb17f1df9c721e7",
+                "reference": "8201978de88a9fa0923e18601bb17f1df9c721e7",
                 "shasum": ""
             },
             "require": {
@@ -154,7 +101,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "3.0-dev"
+                    "dev-master": "3.1-dev"
                 }
             },
             "autoload": {
@@ -181,7 +128,7 @@
             ],
             "description": "Symfony Finder Component",
             "homepage": "https://symfony.com",
-            "time": "2016-01-27 05:14:46"
+            "time": "2016-06-29 05:41:56"
         }
     ],
     "aliases": [],

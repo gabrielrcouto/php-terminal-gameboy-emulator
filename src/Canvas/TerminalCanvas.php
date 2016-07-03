@@ -2,11 +2,15 @@
 
 namespace GameBoy\Canvas;
 
-use Drawille\Canvas;
 use GameBoy\Settings;
 
 class TerminalCanvas implements DrawContextInterface
 {
+    /**
+     * The blank brailler char
+     * @var String
+     */
+    protected $brailleCharOffset;
     protected $canvas;
     /**
      * If is a color enabled canvas, set to true
@@ -16,25 +20,39 @@ class TerminalCanvas implements DrawContextInterface
     protected $currentSecond = 0;
     protected $framesInSecond = 0;
     protected $fps = 0;
+    protected $height = 0;
     protected $lastFrame;
     protected $lastFrameCanvasBuffer;
-
-    private $width = 0;
-    private $height = 0;
+    /**
+     * Braille Pixel Matrix
+     *   ,___,
+     *   |1 4|
+     *   |2 5|
+     *   |3 6|
+     *   |7 8|
+     *   `````
+     * @var Array
+     */
+    protected $pixelMap;
+    protected $width = 0;
 
     public function __construct()
     {
-        $this->canvas = new Canvas();
+        $this->brailleCharOffset = html_entity_decode('&#' . (0x2800) . ';', ENT_NOQUOTES, 'UTF-8');
+        $this->pixelMap = [
+            [html_entity_decode('&#' . (0x2801) . ';', ENT_NOQUOTES, 'UTF-8'), html_entity_decode('&#' . (0x2808) . ';', ENT_NOQUOTES, 'UTF-8')],
+            [html_entity_decode('&#' . (0x2802) . ';', ENT_NOQUOTES, 'UTF-8'), html_entity_decode('&#' . (0x2810) . ';', ENT_NOQUOTES, 'UTF-8')],
+            [html_entity_decode('&#' . (0x2804) . ';', ENT_NOQUOTES, 'UTF-8'), html_entity_decode('&#' . (0x2820) . ';', ENT_NOQUOTES, 'UTF-8')],
+            [html_entity_decode('&#' . (0x2840) . ';', ENT_NOQUOTES, 'UTF-8'), html_entity_decode('&#' . (0x2880) . ';', ENT_NOQUOTES, 'UTF-8')],
+        ];
     }
 
     /**
      * Draw image on canvas using braille font.
      *
      * @param object $canvasBuffer $data = Each pixel (true/false)
-     * @param int    $left
-     * @param int    $top
      */
-    public function draw($canvasBuffer, $left, $top)
+    public function draw($canvasBuffer)
     {
         //Calculate current FPS
         if ($this->currentSecond != time()) {
@@ -49,32 +67,37 @@ class TerminalCanvas implements DrawContextInterface
         // @TODO - The FPS will be wrong, need to find a way to update
         // without redraw
         if ($canvasBuffer != $this->lastFrameCanvasBuffer) {
-            //Clear the pixels from the canvas
-            $this->canvas->clear();
+            // Array with all braille chars of the frame, filled with the blank char
+            // 2880 = total braille chars per frame
+            $chars = array_fill(0, 2880, $this->brailleCharOffset);
 
-            //Corner pixel, to draw same size each time
-            $this->canvas->set(0, 0);
-            $this->canvas->set(159, 143);
+            // Turn on the first and last pixels
+            $chars[0] |= $this->pixelMap[0][0];
+            $chars[2879] |= $this->pixelMap[0][0];
 
-            $y = 0;
-            $count = count($canvasBuffer);
+            // Frame string - It's a big braille chars string
+            $frame = '';
 
-            for ($i = 0; $i < $count; $i++) {
-                $x = $i % 160;
+            for ($y = 0; $y < 144; $y++) {
+                for ($x = 0; $x < 160; $x++) {
+                    $pixelCanvasNumber = $x + (160 * $y);
+                    $charPosition = floor($x / 2) + (floor($y / 4) * 80);
 
-                if ($canvasBuffer[$i]) {
-                    $this->canvas->set($x, $y);
-                }
+                    if (isset($canvasBuffer[$pixelCanvasNumber]) && $canvasBuffer[$pixelCanvasNumber]) {
+                        $chars[$charPosition] |= $this->pixelMap[$y % 4][$x % 2];
+                    }
 
-                if ($x == 159) {
-                    ++$y;
+                    // Each braille frame has 8 pixels, when we reach the last pixel,
+                    // we can append to the frame string
+                    if ($x % 2 === 1 && $y % 4 === 3) {
+                        $frame .= $chars[$charPosition];
+
+                        if ($x % 159 === 0) {
+                            $frame .= PHP_EOL;
+                        }
+                    }
                 }
             }
-
-            $frame = $this->canvas->frame([
-                'min_x' => 0,
-                'max_x' => 79
-            ]);
 
             $this->lastFrame = $frame;
             $this->lastFrameCanvasBuffer = $canvasBuffer;
@@ -85,13 +108,11 @@ class TerminalCanvas implements DrawContextInterface
                 $content = "\e[{$this->height}A\e[{$this->width}D";
             }
 
-            $content .= sprintf('FPS: %d - Frame Skip: %s'.PHP_EOL, $this->fps, Settings::$frameskipAmout);
-            $content .= $frame;
-
+            $content .= sprintf('FPS: %3d - Frame Skip: %3d' . PHP_EOL, $this->fps, Settings::$frameskipAmout) . $frame;
             echo $content;
 
-            $this->height = substr_count($frame, PHP_EOL) + 1;
-            $this->width = strpos($frame, PHP_EOL);
+            $this->height = 37;
+            $this->width = 80;
         }
     }
 }
