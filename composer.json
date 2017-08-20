@@ -19,7 +19,8 @@
         "symfony/finder" : "*"
     },
     "config": {
-        "bin-dir": "bin"
+        "bin-dir": "bin",
+        "optimize-autoloader": true
     },
     "autoload": {
         "psr-4": {
