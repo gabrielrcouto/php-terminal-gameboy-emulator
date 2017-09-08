@@ -142,3 +142,5 @@ It does not have any commercial or profitable intentions.
 The user is responsible to use this code and its content in the terms of the law.
 
 The author is completely against piracy and respects all the copyrights, trademarks and patents of Nintendo.
+
+<a target='_blank' rel='nofollow' href='https://app.codesponsor.io/link/bvezX9B9cTJTidmcB4iikNff/gabrielrcouto/php-terminal-gameboy-emulator'>  <img alt='Sponsor' width='888' height='68' src='https://app.codesponsor.io/embed/bvezX9B9cTJTidmcB4iikNff/gabrielrcouto/php-terminal-gameboy-emulator.svg' /></a>
