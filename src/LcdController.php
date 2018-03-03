@@ -79,101 +79,100 @@ class LcdController
     public function scanLine($line)
     {
         //When turned off = Do nothing!
-        if ($this->LCDisOn) {
-            if ($line < 143) {
-                //We're on a normal scan line:
-                if ($this->core->LCDTicks < 20) {
-                    $this->scanLineMode2(); // mode2: 80 cycles
-                } elseif ($this->core->LCDTicks < 63) {
-                    $this->scanLineMode3(); // mode3: 172 cycles
-                } elseif ($this->core->LCDTicks < 114) {
-                    $this->scanLineMode0(); // mode0: 204 cycles
-                } else {
-                    //We're on a new scan line:
-                    $this->core->LCDTicks -= 114;
-                    $this->actualScanLine = ++$this->core->memory[0xFF44];
-                    $this->matchLYC();
-                    if ($this->STATTracker != 2) {
-                        if ($this->core->hdmaRunning && !$this->core->halt && $this->LCDisOn) {
-                            $this->core->performHdma(); //H-Blank DMA
-                        }
-                        if ($this->mode0TriggerSTAT) {
-                            $this->core->memory[0xFF0F] |= 0x2; // set IF bit 1
-                        }
-                    }
-                    $this->STATTracker = 0;
-                    $this->scanLineMode2(); // mode2: 80 cycles
-                    if ($this->core->LCDTicks >= 114) {
-                        //We need to skip 1 or more scan lines:
-                        $this->core->notifyScanline();
-                        $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
-                    }
+        if (!$this->LCDisOn) {
+            return;
+        }
+    
+        if ($line <= 143 && $this->core->LCDTicks < 20) {
+            return $this->scanLineMode2(); // mode2: 80 cycles
+        }
+        if ($line <= 143 && $this->core->LCDTicks < 63) {
+            return $this->scanLineMode3(); // mode3: 172 cycles
+        }
+        if ($line <= 143 && $this->core->LCDTicks < 114) {
+            return $this->scanLineMode0(); // mode0: 204 cycles
+        }
+        
+        if ($line <= 143) {
+            $this->core->LCDTicks -= 114;
+            $this->actualScanLine = ++$this->core->memory[0xFF44];
+            $this->matchLYC();
+            if ($this->mode1TriggerSTAT) {
+                $this->core->memory[0xFF0F] |= 0x2; // set IF bit 1
+            }
+            if ($this->STATTracker != 2) {
+                if ($this->core->hdmaRunning && !$this->core->halt && $this->LCDisOn) {
+                    $this->core->performHdma(); //H-Blank DMA
                 }
-            } elseif ($line == 143) {
-                //We're on the last visible scan line of the LCD screen:
-                if ($this->core->LCDTicks < 20) {
-                    $this->scanLineMode2(); // mode2: 80 cycles
-                } elseif ($this->core->LCDTicks < 63) {
-                    $this->scanLineMode3(); // mode3: 172 cycles
-                } elseif ($this->core->LCDTicks < 114) {
-                    $this->scanLineMode0(); // mode0: 204 cycles
-                } else {
-                    //Starting V-Blank:
-                    //Just finished the last visible scan line:
-                    $this->core->LCDTicks -= 114;
-                    $this->actualScanLine = ++$this->core->memory[0xFF44];
-                    $this->matchLYC();
-                    if ($this->mode1TriggerSTAT) {
-                        $this->core->memory[0xFF0F] |= 0x2; // set IF bit 1
-                    }
-                    if ($this->STATTracker != 2) {
-                        if ($this->core->hdmaRunning && !$this->core->halt && $this->LCDisOn) {
-                            $this->core->performHdma(); //H-Blank DMA
-                        }
-                        if ($this->mode0TriggerSTAT) {
-                            $this->core->memory[0xFF0F] |= 0x2; // set IF bit 1
-                        }
-                    }
-                    $this->STATTracker = 0;
-                    $this->modeSTAT = 1;
-                    $this->core->memory[0xFF0F] |= 0x1; // set IF flag 0
-                    //LCD off takes at least 2 frames.
-                    if ($this->core->drewBlank > 0) {
-                        --$this->core->drewBlank;
-                    }
-                    if ($this->core->LCDTicks >= 114) {
-                        //We need to skip 1 or more scan lines:
-                        $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
-                    }
+                if ($this->mode0TriggerSTAT) {
+                    $this->core->memory[0xFF0F] |= 0x2; // set IF bit 1
                 }
-            } elseif ($line < 153) {
-                //In VBlank
-                if ($this->core->LCDTicks >= 114) {
-                    //We're on a new scan line:
-                    $this->core->LCDTicks -= 114;
-                    $this->actualScanLine = ++$this->core->memory[0xFF44];
-                    $this->matchLYC();
-                    if ($this->core->LCDTicks >= 114) {
-                        //We need to skip 1 or more scan lines:
-                        $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
-                    }
-                }
-            } else {
-                //VBlank Ending (We're on the last actual scan line)
-                if ($this->core->memory[0xFF44] == 153) {
-                    $this->core->memory[0xFF44] = 0; //LY register resets to 0 early.
-                    $this->matchLYC(); //LY==LYC Test is early here (Fixes specific one-line glitches (example: Kirby2 intro)).
-                }
-                if ($this->core->LCDTicks >= 114) {
-                    //We reset back to the beginning:
-                    $this->core->LCDTicks -= 114;
-                    $this->actualScanLine = 0;
-                    $this->scanLineMode2(); // mode2: 80 cycles
-                    if ($this->core->LCDTicks >= 114) {
-                        //We need to skip 1 or more scan lines:
-                        $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
-                    }
-                }
+            }
+            $this->STATTracker = 0;
+        }
+    
+        //We're on a normal scan line:
+        if ($line < 143) {
+            //We're on a new scan line:
+            $this->scanLineMode2(); // mode2: 80 cycles
+            if ($this->core->LCDTicks >= 114) {
+                //We need to skip 1 or more scan lines:
+                $this->core->notifyScanline();
+                $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
+            }
+            
+            return;
+        }
+        
+        if ($line == 143) {
+            //We're on the last visible scan line of the LCD screen:
+            
+            //Starting V-Blank:
+            //Just finished the last visible scan line:
+            $this->modeSTAT = 1;
+            $this->core->memory[0xFF0F] |= 0x1; // set IF flag 0
+            //LCD off takes at least 2 frames.
+            if ($this->core->drewBlank > 0) {
+                --$this->core->drewBlank;
+            }
+            if ($this->core->LCDTicks >= 114) {
+                //We need to skip 1 or more scan lines:
+                $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
+            }
+            
+            return;
+        } 
+        if ($line < 153) {
+            if ($this->core->LCDTicks < 114) {
+                return;
+            }
+            //In VBlank
+            
+            //We're on a new scan line:
+            $this->core->LCDTicks -= 114;
+            $this->actualScanLine = ++$this->core->memory[0xFF44];
+            $this->matchLYC();
+            if ($this->core->LCDTicks >= 114) {
+                //We need to skip 1 or more scan lines:
+                $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
+            }
+            
+            return;
+        }
+        
+        //VBlank Ending (We're on the last actual scan line)
+        if ($this->core->memory[0xFF44] == 153) {
+            $this->core->memory[0xFF44] = 0; //LY register resets to 0 early.
+            $this->matchLYC(); //LY==LYC Test is early here (Fixes specific one-line glitches (example: Kirby2 intro)).
+        }
+        if ($this->core->LCDTicks >= 114) {
+            //We reset back to the beginning:
+            $this->core->LCDTicks -= 114;
+            $this->actualScanLine = 0;
+            $this->scanLineMode2(); // mode2: 80 cycles
+            if ($this->core->LCDTicks >= 114) {
+                //We need to skip 1 or more scan lines:
+                $this->scanLine($this->actualScanLine); //Scan Line and STAT Mode Control
             }
         }
     }
