@@ -15,15 +15,17 @@ class SdlCanvas implements DrawContextInterface
     public function __construct() {
   		$this->sdl = SDL_CreateWindow('PHP TerminalGameboy', SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 576, SDL_WINDOW_SHOWN);
   		$this->renderer = SDL_CreateRenderer($this->sdl, 0, SDL_RENDERER_SOFTWARE);
+
   		SDL_SetRenderDrawColor($this->renderer, 0, 0, 0, 255);
   		SDL_RenderClear($this->renderer);
     }
     public function draw($canvasBuffer)
     {
+      //print_r($canvasBuffer); die();
         if(count($canvasBuffer) > 0) {
-          for ($y = 0; $y < 160; $y++) {
-              for ($x = 0; $x < 144; $x++) {
-                  $index = ($x + ($y * 160));
+          for ($y = 0; $y <= 160; $y++) {
+              for ($x = 0; $x <= 160; $x++) {
+                  $index = ($x + round($y * 160));
                   if($canvasBuffer[$index] == 1) {
                     $fill = 155;
                   } else {
