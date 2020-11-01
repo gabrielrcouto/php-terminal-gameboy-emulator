@@ -1072,6 +1072,7 @@ class Core
                     // no break
                 case 2:
                     $this->untilEnable--;
+                    usleep(1000);
                     // no break
             }
             //Execute Interrupt:
