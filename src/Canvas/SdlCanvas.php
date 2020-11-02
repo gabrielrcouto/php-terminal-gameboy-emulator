@@ -12,17 +12,14 @@ class SdlCanvas implements DrawContextInterface
     public $renderer;
     public $pixels;
     public $greenoffset = 0;
-    public $core;
 
     public function __construct() {
-      $this->core = $core;
+
   		$this->sdl = SDL_CreateWindow('PHP TerminalGameboy', SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 640, 576, SDL_WINDOW_SHOWN);
   		$this->renderer = SDL_CreateRenderer($this->sdl, 0, SDL_RENDERER_SOFTWARE);
   		SDL_SetRenderDrawColor($this->renderer, 0, 0, 0, 255);
   		SDL_RenderClear($this->renderer);
-      if($this->core->cGBC == false) {
-        $this->greenoffset = 50;
-      }
+
     }
     public function draw($canvasBuffer)
     {
