@@ -49,7 +49,7 @@ class Keyboard
                 echo "SDL_KEYDOWN ".$this->event->key->keysym->sym."\n";
     		        break;
     		      case SDL_KEYUP:
-    					  $this->keyUp($this->keyPressing);
+    					  $this->keyUp($key);
                 echo "SDL_KEYUP ".$this->event->key->keysym->sym."\n";
     						break;
     		      default:
