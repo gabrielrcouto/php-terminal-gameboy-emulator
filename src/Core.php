@@ -289,7 +289,7 @@ class Core
 
     public $bgEnabled = true;
 
-    public $spritePriorityEnabled = true;
+    public $spritePriorityEnabled = 0x80;
 
     // true if there are any images to be invalidated
     public $tileReadState = [];
