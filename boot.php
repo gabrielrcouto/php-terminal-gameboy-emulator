@@ -10,7 +10,7 @@ foreach (['../../autoload.php', '../vendor/autoload.php', 'vendor/autoload.php']
 }
 unset($autoload);
 
-use GameBoy\Canvas\TerminalCanvas;
+use GameBoy\Canvas\SdlCanvas;
 use GameBoy\Core;
 use GameBoy\Keyboard;
 
@@ -44,7 +44,7 @@ if (extension_loaded('xdebug')) {
 
 $rom = file_get_contents($filename);
 
-$canvas = new TerminalCanvas();
+$canvas = new SdlCanvas();
 $core = new Core($rom, $canvas);
 $keyboard = new Keyboard($core);
 
