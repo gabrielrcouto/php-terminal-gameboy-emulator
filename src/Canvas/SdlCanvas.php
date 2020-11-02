@@ -7,7 +7,7 @@ use GameBoy\Settings;
 class SdlCanvas implements DrawContextInterface
 {
     private $serial = 0;
-    public $colorEnabled = false;
+    public $colorEnabled = true;
     public $sdl;
     public $renderer;
     public $pixels;
@@ -22,21 +22,26 @@ class SdlCanvas implements DrawContextInterface
     public function draw($canvasBuffer)
     {
       //print_r($canvasBuffer); die();
+      //echo count($canvasBuffer);
         if(count($canvasBuffer) > 0) {
-          for ($y = 0; $y <= 160; $y++) {
-              for ($x = 0; $x <= 160; $x++) {
-                  $index = ($x + round($y * 160));
-                  if($canvasBuffer[$index] == 1) {
-                    $fill = 155;
-                  } else {
-                    $fill = 0;
+            for ($y = 0; $y < 144; $y++) {
+                for ($x = 0; $x < 160; $x++) {
+                    $index = ($x + ($y * 160))*4;
+                    if(isset($canvasBuffer[$index])) {
+                      if($canvasBuffer[$index] == "") {
+                        $fill = 0;
+                      } else {
+                        $fill = $canvasBuffer[$index];
+                      }
+                      if(!isset($this->pixels[$x][$y])) {
+                        $this->pixels[$x][$y] = new \SDL_Rect($x*4, $y*4, 4, 4);
+                      }
+                      SDL_SetRenderDrawColor($this->renderer, $fill, $fill, $fill, 155);
+                      SDL_RenderFillRect($this->renderer, $this->pixels[$x][$y]);
+                    } else {
+                      echo "$x + $y*160 * 4) = $index \n";
+                    }
                   }
-                  if(!isset($this->pixels[$x][$y])) {
-                    $this->pixels[$x][$y] = new \SDL_Rect($x*4, $y*4, 4, 4);
-                  }
-                  SDL_SetRenderDrawColor($this->renderer, $fill, $fill, $fill, 155);
-                  SDL_RenderFillRect($this->renderer, $this->pixels[$x][$y]);
-              }
           }
           SDL_RenderPresent($this->renderer);
         }
