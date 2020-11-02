@@ -33,15 +33,12 @@ class SdlCanvas implements DrawContextInterface
                 for ($x = 0; $x < 160; $x++) {
                     $index = ($x + ($y * 160))*4;
                     if($canvasBuffer[$index] != "") {
-                        $fill = [$canvasBuffer[$index], $canvasBuffer[$index+1], $canvasBuffer[$index+2], $canvasBuffer[$index+3]];
-                        if($fill<0) { $fill = 0; }
-                      if(!isset($this->pixels[$x][$y])) {
-                        $this->pixels[$x][$y] = new \SDL_Rect($x*4, $y*4, 4, 4);
-                      }
-                      if($fill[3] != 0) {
-                        SDL_SetRenderDrawColor($this->renderer, $fill[0], $fill[1], $fill[2], $fill[3]);
+                        $fill = [$canvasBuffer[$index], $canvasBuffer[$index+1], $canvasBuffer[$index+2]];
+                        if(!isset($this->pixels[$x][$y])) {
+                          $this->pixels[$x][$y] = new \SDL_Rect($x*4, $y*4, 4, 4);
+                        }
+                        SDL_SetRenderDrawColor($this->renderer, $fill[0], $fill[1], $fill[2], 255);
                         SDL_RenderFillRect($this->renderer, $this->pixels[$x][$y]);
-                      }
                     }
 
                   }
